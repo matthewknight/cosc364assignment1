@@ -1,6 +1,7 @@
 import sys
 import json
 from socket import *
+
 class ripDemon(object):
     """Creates an instance of a router that implements the RIP routing Daemon.
     
@@ -36,7 +37,13 @@ class ripDemon(object):
             self.sockets_list.append(serverSocket)
             print("waiting on port " + str(port))
         
-        
+    """THink this is wrong"""
+    def listen(self):
+        while True:
+            for socket in self.sockets_list:
+                print("Listeing on ", socket)
+                data, address = socket.recvfrom(1024)
+                
     
     
     
@@ -54,5 +61,5 @@ if __name__ == "__main__":
     router.load_config()
     #router.test_printr()
     router.input_socket_creator()
-    
+    router.listen()
         
