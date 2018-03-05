@@ -1,8 +1,10 @@
 import sys
 import json
+import select
 from socket import *
 
-class ripDemon(object):
+
+class RipDemon(object):
     """Creates an instance of a router that implements the RIP routing Daemon.
     
        Router can be initialised in the command line with:
@@ -13,46 +15,33 @@ class ripDemon(object):
     """
     
     def __init__(self, filename):
-        self.filename = filename
-    
-    def load_config(self):
-        """Read the config file supplied via the command line."""
         data = json.load(open(self.filename))
-        self.routing_id = data["router-id"]
+        self.filename = filename
         self.input_ports = data["input-ports"]
+        self.routing_id = data["router-id"]
         self.output_ports = data["outputs"]
-        return self.routing_id, self.input_ports, self.output_ports
-    
-    
+        self.input_sockets_list = []
+
     def input_socket_creator(self):
         """Initialise the sockets and create a list of socket objects
            based on the number of ports specified in config file"""
-        num_ports = len(self.input_ports)
-        self.sockets_list = []
-        
         for port in self.input_ports:
-            
-            serverSocket = socket(AF_INET, SOCK_DGRAM)
-            serverSocket.bind(('', port))
-            self.sockets_list.append(serverSocket)
-            print("waiting on port " + str(port))
-        
-    """THink this is wrong"""
+            server_socket = socket(AF_INET, SOCK_DGRAM)
+            server_socket.bind(('', port))
+            self.input_sockets_list.append(server_socket)
+            print("Waiting on port " + str(port))
+
     def listen(self):
         while True:
-            for socket in self.sockets_list:
-                print("Listeing on ", socket)
-                data, address = socket.recvfrom(1024)
-                
-    
-    
+            ready = select.select(self.input_sockets_list, [], [], 1)
+            if ready[0]:
+                data = ready[0][0].recv(1024)
+                # Do with data
     
     def test_printr(self):
         print("Routing id: " + self.routing_id)
         print(self.input_ports)
         print("Output ports: " + self.output_ports)
-        
-
 
 
 if __name__ == "__main__":
