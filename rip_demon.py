@@ -15,8 +15,9 @@ class RipDemon(object):
     """
     
     def __init__(self, filename):
-        data = json.load(open(self.filename))
         self.filename = filename
+        data = json.load(open(self.filename))
+
         self.input_ports = data["input-ports"]
         self.routing_id = data["router-id"]
         self.output_ports = data["outputs"]
@@ -33,11 +34,14 @@ class RipDemon(object):
 
     def listen(self):
         while True:
-            ready = select.select(self.input_sockets_list, [], [], 1)
-            if ready[0]:
-                data = ready[0][0].recv(1024)
-                # Do with data
-    
+            readable, writable, exceptional = select.select(self.input_sockets_list, [], [])
+            for s in readable:
+                print("Yeet")
+                # Got input from another demon
+                    # 1. Unpackage data
+                    # 2. Process data
+                    # 3. Combine data into own data structure
+
     def test_printr(self):
         print("Routing id: " + self.routing_id)
         print(self.input_ports)
@@ -46,9 +50,9 @@ class RipDemon(object):
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]    
-    router = ripDemon(config_file_name)
-    router.load_config()
+    router = RipDemon(config_file_name)
     #router.test_printr()
     router.input_socket_creator()
     router.listen()
-        
+
+
