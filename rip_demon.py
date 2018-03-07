@@ -3,7 +3,6 @@ import json
 import select
 from socket import *
 
-
 class RipDemon(object):
     """Creates an instance of a router that implements the RIP routing Daemon.
     
@@ -17,9 +16,9 @@ class RipDemon(object):
     def __init__(self, filename):
         self.filename = filename
         data = json.load(open(self.filename))
-
-        self.input_ports = data["input-ports"]
+        self.config_file_check(data)
         self.routing_id = data["router-id"]
+        self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
 
@@ -41,6 +40,26 @@ class RipDemon(object):
                     # 1. Unpackage data
                     # 2. Process data
                     # 3. Combine data into own data structure
+
+
+    def config_file_check(self, data):
+        """Not the most graceful check to see if the config file has all required attributes."""
+
+        try:
+            self.routing_id = data["router-id"]
+        except AttributeError:
+            print("Router id not specified in config file. Exiting...")
+            exit(0)
+        try:
+            self.input_ports = data["input-ports"]
+        except KeyError:
+            print("Input ports not specified in config file. Exiting...")
+            exit(0)
+        try:
+            self.output_ports = data["outputs"]
+        except AttributeError:
+            print("Output ports not specified in config file. Exiting...")
+            exit(0)
 
     def test_printr(self):
         print("Routing id: " + self.routing_id)
