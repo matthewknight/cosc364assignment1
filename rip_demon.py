@@ -4,6 +4,7 @@ import select
 import threading
 import time
 import queue
+import random
 from socket import *
 import routing_table
 
@@ -50,7 +51,7 @@ class RipDemon(threading.Thread):
                     # 2. Process data
                     # 3. Combine data into own data structure
             if not sendScheduledMessageQueue.empty():
-                print("SENDING MESSAGE")
+                print("//SENDING MESSAGE//\n")
                 sendScheduledMessageQueue.queue.clear()
 
 
@@ -103,10 +104,12 @@ class RIPTimer(threading.Thread):
         '''
         self.alive = True
         while self.alive:
-            time.sleep(1)
+            tickTime = 0.8 + (random.randint(0, 5)) / 10
+            time.sleep(tickTime)
+            print("Tick time: ", tickTime)
             # update count value
             self.value += 1
-            print(self.value)
+            print("     Tick count: ", self.value)
             if (self.value == self.interval):
                 sendScheduledMessageQueue.put("YES")
                 self.value = 0

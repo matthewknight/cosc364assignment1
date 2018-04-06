@@ -6,5 +6,5 @@ class RoutingTable(object):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
 
-    def createRoutingTable(self):
+    #def createRoutingTable(self):
 

@@ -8,14 +8,19 @@
 |                                                               |
 ~                        RIP Entry (20)                         ~
 |                                                               |
-+---------------+---------------+---------------+---------------+
-
++--------------+---------------+---------------+---------------+
 
 """
 
-class Packet(object):
-    def __init__(self):
-        self.command = None
+class RIPPacket(object):
+    def __init__(self, command, router_id, rip_entries):
+        self.command = command
         self.version = 2
-        self.router_id = None
+        self.router_id = router_id
+        self.rip_entries = rip_entries
+
+##class RIPEntry(object):
+  #  def __init__(self):
+
+
 
