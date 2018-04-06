@@ -9,7 +9,7 @@ class RoutingTable(object):
         self.output_ports = data["outputs"]
         self.table = []
         self.populateTable()
-
+        print(self.table)
     def populateTable(self):
         self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0)
         self.table.append(self_entry)

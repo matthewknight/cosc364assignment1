@@ -7,4 +7,6 @@ class RoutingRow(object):
         self.nextHopId = nextHopId
         self.learnedFrom = learnedFrom
 
+    def __repr__(self):
+        return "{0.nextHopPort} {0.linkCost} {0.destId} {0.nextHopId} {0.learnedFrom}".format(self)
 

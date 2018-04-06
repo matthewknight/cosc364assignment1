@@ -125,12 +125,10 @@ class RIPTimer(threading.Thread):
         return self.value
 
 
-
 if __name__ == "__main__":
-
     sendScheduledMessageQueue = queue.Queue()
 
-    config_file_name = "config1.json"
+    config_file_name = sys.argv[1]
     router = RipDemon(config_file_name)
     timer = RIPTimer(5)
 
