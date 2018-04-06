@@ -28,7 +28,8 @@ class RipDemon(threading.Thread):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
-        self.routing_table = routing_table.RoutingTable(data)
+        self.routing_table = routing_table.RoutingTable(data).getRoutingTable()
+
 
 
     def input_socket_creator(self):
