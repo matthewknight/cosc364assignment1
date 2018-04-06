@@ -29,8 +29,8 @@ class RipDemon(threading.Thread):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
-        self.routing_table = routing_table.RoutingTable(data).getRoutingTable()
-
+        self.routing_table = routing_table.RoutingTable(data)
+        self.alive = False
 
 
     def input_socket_creator(self):
@@ -43,8 +43,8 @@ class RipDemon(threading.Thread):
             print("Waiting on port " + str(port))
 
     def listen(self):
-        while True:
-            readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.5)
+        while self.alive:
+            readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 print("Yeet")
                 # Got input from another demon
@@ -81,8 +81,17 @@ class RipDemon(threading.Thread):
         print("Output ports: " + self.output_ports)
 
     def run(self):
+        self.alive = True
         self.input_socket_creator()
         self.listen()
+
+    def finish(self):
+        '''
+        close the thread, return final value
+        '''
+        # stop the while loop in method run
+        self.alive = False
+        return self.value
 
 
 class RIPTimer(threading.Thread):
@@ -90,7 +99,7 @@ class RIPTimer(threading.Thread):
     create a thread object that will do the counting in the background
     default interval is 1/1000 of a second
     '''
-    def __init__(self, intervalBetweenMessages=1):
+    def __init__(self, intervalBetweenMessages=1, random=False):
         # init the thread
         threading.Thread.__init__(self)
         self.interval = intervalBetweenMessages  # seconds
@@ -98,6 +107,7 @@ class RIPTimer(threading.Thread):
         self.value = 0
         # controls the while loop in method run
         self.alive = False
+        self.random = random
 
     def run(self):
         '''
@@ -105,13 +115,18 @@ class RIPTimer(threading.Thread):
         '''
         self.alive = True
         while self.alive:
-            tickTime = 0.8 + (random.randint(0, 5)) / 10
+            if self.random:
+                tickTime = 0.8 + (random.randint(0, 4)) / 10
+            else:
+                tickTime = 1.0
+
             time.sleep(tickTime)
             print("Tick time: ", tickTime)
             # update count value
             self.value += 1
             print("     Tick count: ", self.value)
-            if (self.value == self.interval):
+
+            if self.value == self.interval:
                 sendScheduledMessageQueue.put("YES")
                 self.value = 0
 
@@ -130,7 +145,7 @@ if __name__ == "__main__":
 
     config_file_name = sys.argv[1]
     router = RipDemon(config_file_name)
-    timer = RIPTimer(5)
+    timer = RIPTimer(3, False)
 
     router.start()
     timer.start()
