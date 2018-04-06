@@ -7,7 +7,6 @@ class RoutingTable(object):
         self.routing_id = data["router-id"]
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
-        print(self.output_ports)
         self.table = []
         self.populateTable()
 
@@ -18,14 +17,13 @@ class RoutingTable(object):
 
         for i in output_list:
             values = i.split('-')
+            nextHopPort = values[0]
             linkCost = values[1]
             destId = values[2]
-            nextHopPort = values[0]
-            learnedFrom = 0  # ConfigFile
+            learnedFrom = 0  # As it was learned from ConfigFile
 
-            row = routing_row.RoutingRow(nextHopPort, linkCost, destId, nextHopId, learnedFrom)
+            row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom)
             self.table.append(row)
-            print()
 
     def getRoutingTable(self):
         return self.table
