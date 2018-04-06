@@ -38,7 +38,7 @@ class RipDemon(threading.Thread):
 
     def listen(self):
         while True:
-            readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 1.0)
+            readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.5)
             for s in readable:
                 print("Yeet")
                 # Got input from another demon
@@ -102,10 +102,11 @@ class RIPTimer(threading.Thread):
             time.sleep(1)
             # update count value
             self.value += 1
+            print(self.value)
             if (self.value == self.interval):
                 sendScheduledMessageQueue.put("YES")
                 self.value = 0
-            print(self.value)
+
 
     def finish(self):
         '''
