@@ -27,3 +27,4 @@ class RoutingTable(object):
 
     def getRoutingTable(self):
         return self.table
+
