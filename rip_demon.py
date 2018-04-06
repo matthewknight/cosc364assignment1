@@ -5,6 +5,8 @@ import threading
 import time
 import queue
 from socket import *
+import routing_table
+
 
 class RipDemon(threading.Thread):
 
@@ -26,6 +28,8 @@ class RipDemon(threading.Thread):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
+        self.routing_table = routing_table.RoutingTable(data)
+
 
     def input_socket_creator(self):
         """Initialise the sockets and create a list of socket objects
