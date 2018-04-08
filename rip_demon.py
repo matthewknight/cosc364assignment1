@@ -8,6 +8,7 @@ import random
 import pickle
 from socket import *
 import routing_table
+import routing_row
 
 
 class RipDemon(threading.Thread):
@@ -52,11 +53,12 @@ class RipDemon(threading.Thread):
             for s in readable:
                 packet, addr = s.recvfrom(2048)
                 print("Received packet from ", addr)
-                unpickledPacket = packet.loads()
+                unpickledPacket = pickle.loads(packet)
 
-                for found_row in unpickledPacket.getRoutingTable():
+                for found_row in unpickledPacket:
                     print(found_row)
-                    self.routing_table.addToRoutingTable(found_row)
+                    self.routing_table.addToRoutingTable(routing_row.RoutingRow(found_row[0], found_row[1],
+                                                                                found_row[2], found_row[3], found_row[4]))
 
 
             if not sendScheduledMessageQueue.empty():
@@ -71,7 +73,6 @@ class RipDemon(threading.Thread):
             portToSend = entry[0]
             if portToSend != 0:
                 dataToSend = pickle.dumps(self.routing_table.getRoutingTable())
-                #tempSocket.connect(('127.0.0.1', portToSend))
                 self.input_sockets_list[0].sendto(dataToSend, ("127.0.0.1", portToSend))
 
     def config_file_check(self, data):
