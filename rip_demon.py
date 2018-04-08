@@ -5,6 +5,7 @@ import threading
 import time
 import queue
 import random
+import pickle
 from socket import *
 import routing_table
 
@@ -46,11 +47,14 @@ class RipDemon(threading.Thread):
         while self.alive:
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
-                print("Yeet")
-                # Got input from another demon
-                    # 1. Unpackage data
-                    # 2. Process data
-                    # 3. Combine data into own data structure
+                packet, addr = s.recvfrom(2048)
+                print("Received packet from ", addr)
+                unpickledPacket = packet.loads()
+
+                for routing_row in unpickledPacket.getRoutingTable():
+                    print(routing_row)
+                    #TODO combine data into own structure
+
             if not sendScheduledMessageQueue.empty():
                 print("//SENDING MESSAGE//\n")
                 sendScheduledMessageQueue.queue.clear()
