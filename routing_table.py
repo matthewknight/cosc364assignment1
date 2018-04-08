@@ -28,8 +28,16 @@ class RoutingTable(object):
             self.table.append(row)
 
     def getRoutingTable(self):
-
         return self.table
+
+    def addToRoutingTable(self, new_row):
+        if not isinstance(new_row, routing_row.RoutingRow):
+            raise TypeError("Non routing-row provided as arg")
+
+        self.table.append(new_row)
+
+
+
 
 
 
