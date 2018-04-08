@@ -53,9 +53,10 @@ class RipDemon(threading.Thread):
                 print("Received packet from ", addr)
                 unpickledPacket = packet.loads()
 
-                for routing_row in unpickledPacket.getRoutingTable():
-                    print(routing_row)
-                    #TODO combine data into own structure
+                for found_row in unpickledPacket.getRoutingTable():
+                    print(found_row)
+                    self.routing_table.addToRoutingTable(found_row)
+
 
             if not sendScheduledMessageQueue.empty():
                 print("//SENDING MESSAGE//\n")
