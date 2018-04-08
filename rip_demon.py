@@ -30,6 +30,7 @@ class RipDemon(threading.Thread):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
+        self.input_socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
         self.triggeredUpdate()
@@ -66,8 +67,13 @@ class RipDemon(threading.Thread):
     def triggeredUpdate(self):
         #1. read our config file to find ports to send to
         #2. send self.routingTable to all these ports
-        for port in self.routing_table:
-            print(port)
+        for entry in self.routing_table.getRoutingTable():
+            portToSend = entry[0]
+            if portToSend != 0:
+                dataToSend = pickle.dumps(self.routing_table.getRoutingTable())
+                tempSocket = self.input_sockets_list[0]
+                #tempSocket.connect(('127.0.0.1', portToSend))
+                tempSocket.sendto(dataToSend, ("127.0.0.1", portToSend))
 
     def config_file_check(self, data):
         """Not the most graceful check to see if the config file has all required attributes."""

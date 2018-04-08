@@ -23,7 +23,6 @@ class RoutingTable(object):
             linkCost = values[1]
             destId = values[2]
             learnedFrom = 0  # As it was learned from ConfigFile
-
             row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom).row_as_list()
             self.table.append(row)
 
