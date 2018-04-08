@@ -30,16 +30,19 @@ class RipDemon(threading.Thread):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.input_sockets_list = []
-        self.input_socket_creator()
+        self.send_update_socket = socket(AF_INET, SOCK_DGRAM)
+        self.send_update_socket.bind(('', 42011))
+        self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
         self.triggeredUpdate()
 
 
-    def input_socket_creator(self):
+    def socket_creator(self):
         """Initialise the sockets and create a list of socket objects
            based on the number of ports specified in config file"""
         for port in self.input_ports:
+            print(port)
             server_socket = socket(AF_INET, SOCK_DGRAM)
             server_socket.bind(('', port))
             self.input_sockets_list.append(server_socket)
@@ -71,9 +74,8 @@ class RipDemon(threading.Thread):
             portToSend = entry[0]
             if portToSend != 0:
                 dataToSend = pickle.dumps(self.routing_table.getRoutingTable())
-                tempSocket = self.input_sockets_list[0]
                 #tempSocket.connect(('127.0.0.1', portToSend))
-                tempSocket.sendto(dataToSend, ("127.0.0.1", portToSend))
+                self.send_update_socket.sendto(dataToSend, ("127.0.0.1", portToSend))
 
     def config_file_check(self, data):
         """Not the most graceful check to see if the config file has all required attributes."""
@@ -101,7 +103,7 @@ class RipDemon(threading.Thread):
 
     def run(self):
         self.alive = True
-        self.input_socket_creator()
+        self.socket_creator()
         self.listen()
 
     def finish(self):
