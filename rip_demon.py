@@ -10,6 +10,9 @@ from socket import *
 import routing_table
 import routing_row
 
+#TODO updating metrics and learntFrom thing and submit
+#TODO when a link goes down, delete entry (garbage collection??)
+
 
 class RipDemon(threading.Thread):
 
@@ -52,13 +55,17 @@ class RipDemon(threading.Thread):
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
-                print("Received packet from ", addr)
-                unpickledPacket = pickle.loads(packet)
 
-                for found_row in unpickledPacket:
-                    print(found_row)
-                    self.routing_table.addToRoutingTable(routing_row.RoutingRow(found_row[0], found_row[1],
-                                                                                found_row[2], found_row[3], found_row[4]))
+                unpickledPacket = pickle.loads(packet)
+                print("Received packet from {0} with ID {1}".format(addr, unpickledPacket.getRouterId()))
+
+                identical_entry_found = False
+                for found_row in unpickledPacket.getRoutingTable():
+                    for current_row in self.routing_table.getRoutingTable():
+                        if current_row.row_as_list() == found_row.row_as_list():
+                            identical_entry_found = True
+                    if unpickledPacket.getRouterId() != self.routing_id and identical_entry_found == False:
+                        self.routing_table.addToRoutingTable(found_row)
 
 
             if not sendScheduledMessageQueue.empty():
@@ -66,17 +73,16 @@ class RipDemon(threading.Thread):
                 self.triggeredUpdate()
                 sendScheduledMessageQueue.queue.clear()
 
+
     def triggeredUpdate(self):
-        #1. read our config file to find ports to send to
-        #2. send self.routingTable to all these ports
         for entry in self.routing_table.getRoutingTable():
-            portToSend = entry[0]
+            portToSend = entry.getNextHopPort()
             if portToSend != 0:
-                dataToSend = pickle.dumps(self.routing_table.getRoutingTable())
+                dataToSend = pickle.dumps(self.routing_table)
                 self.input_sockets_list[0].sendto(dataToSend, ("127.0.0.1", portToSend))
 
     def config_file_check(self, data):
-        """Not the most graceful check to see if the config file has all required attributes."""
+        """The most graceful check to see if the config file has all required attributes."""
 
         try:
             self.routing_id = data["router-id"]
@@ -139,10 +145,10 @@ class RIPTimer(threading.Thread):
                 tickTime = 1.0
 
             time.sleep(tickTime)
-            print("Tick time: ", tickTime)
+            #print("Tick time: ", tickTime)
             # update count value
             self.value += 1
-            print("     Tick count: ", self.value)
+            #print("     Tick count: ", self.value)
 
             if self.value == self.interval:
                 sendScheduledMessageQueue.put("YES")
