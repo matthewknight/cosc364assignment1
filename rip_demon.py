@@ -42,7 +42,6 @@ class RipDemon(threading.Thread):
         """Initialise the sockets and create a list of socket objects
            based on the number of ports specified in config file"""
         for port in self.input_ports:
-            print(port)
             server_socket = socket(AF_INET, SOCK_DGRAM)
             server_socket.bind(('', port))
             self.input_sockets_list.append(server_socket)
@@ -103,7 +102,6 @@ class RipDemon(threading.Thread):
 
     def run(self):
         self.alive = True
-        self.socket_creator()
         self.listen()
 
     def finish(self):
