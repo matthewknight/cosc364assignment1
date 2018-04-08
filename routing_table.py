@@ -10,8 +10,10 @@ class RoutingTable(object):
         self.table = []
         self.populateTable()
         print(self.table)
+
     def populateTable(self):
-        self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0)
+        """Populate the routing table with the information learned from the Configuration files"""
+        self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0).row_as_list()
         self.table.append(self_entry)
         output_list = self.output_ports.split(', ')
 
@@ -22,9 +24,13 @@ class RoutingTable(object):
             destId = values[2]
             learnedFrom = 0  # As it was learned from ConfigFile
 
-            row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom)
+            row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom).row_as_list()
             self.table.append(row)
 
     def getRoutingTable(self):
+
         return self.table
+
+
+
 

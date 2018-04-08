@@ -31,6 +31,7 @@ class RipDemon(threading.Thread):
         self.input_sockets_list = []
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
+        self.triggeredUpdate()
 
 
     def input_socket_creator(self):
@@ -41,6 +42,7 @@ class RipDemon(threading.Thread):
             server_socket.bind(('', port))
             self.input_sockets_list.append(server_socket)
             print("Waiting on port " + str(port))
+
 
     def listen(self):
         while self.alive:
@@ -53,8 +55,14 @@ class RipDemon(threading.Thread):
                     # 3. Combine data into own data structure
             if not sendScheduledMessageQueue.empty():
                 print("//SENDING MESSAGE//\n")
+                self.triggeredUpdate()
                 sendScheduledMessageQueue.queue.clear()
 
+    def triggeredUpdate(self):
+        #1. read our config file to find ports to send to
+        #2. send self.routingTable to all these ports
+        for port in self.routing_table:
+            print(port)
 
     def config_file_check(self, data):
         """Not the most graceful check to see if the config file has all required attributes."""
