@@ -24,7 +24,7 @@ class RipDemon(threading.Thread):
        Where X is the config file to be used (1-10)
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, intervalBetweenMessages=1, random=False):
         threading.Thread.__init__(self)
         self.filename = filename
         data = json.load(open(self.filename))
@@ -36,6 +36,13 @@ class RipDemon(threading.Thread):
         self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
+        self.route_timers = []
+
+        # Timer settings
+        self.timer_interval = intervalBetweenMessages
+        self.timer_value = 0
+        self.random = random
+        self.ready_for_periodic_update = False
 
 
     def socket_creator(self):
@@ -48,8 +55,10 @@ class RipDemon(threading.Thread):
             print("Waiting on port " + str(port))
 
 
-    def listen(self):
-        while self.alive:
+    def run(self):
+        while True:
+
+
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
@@ -68,10 +77,31 @@ class RipDemon(threading.Thread):
 
                         self.routing_table.addToRoutingTable(found_row)
 
-            if not sendScheduledMessageQueue.empty():
-                print("//SENDING MESSAGE//\n")
-                self.periodic_update()
-                sendScheduledMessageQueue.queue.clear()
+            self.timer_tick()
+
+
+
+    def timer_tick(self):
+        # Timer component
+        if self.random:
+            tickTime = 0.8 + (random.randint(0, 4)) / 10
+        else:
+            tickTime = 1.0
+
+        time.sleep(tickTime)
+        #print("Tick time: ", tickTime)
+        # update count value
+        self.timer_value += 1
+        #print("     Tick count: ", self.timer_value)
+
+        if self.timer_value == self.timer_interval:
+            self.ready_for_periodic_update = True
+            self.timer_value = 0
+
+        if self.ready_for_periodic_update:
+            print("//SENDING MESSAGE//\n")
+            self.periodic_update()
+            self.ready_for_periodic_update = False
 
     def triggered_update(self):
         print("Yeet")
@@ -109,84 +139,12 @@ class RipDemon(threading.Thread):
         print(self.input_ports)
         print("Output ports: " + self.output_ports)
 
-    def run(self):
-        self.alive = True
-        self.listen()
-
-    def finish(self):
-        '''
-        close the thread, return final value
-        '''
-        # stop the while loop in method run
-        self.alive = False
-        return self.value
-
-
-
-
-
-
-
-class RIPTimer(threading.Thread):
-    '''
-    create a thread object that will do the counting in the background
-    default interval is 1/1000 of a second
-    '''
-    def __init__(self, intervalBetweenMessages=1, random=False):
-        # init the thread
-        threading.Thread.__init__(self)
-        self.interval = intervalBetweenMessages  # seconds
-        # initial value
-        self.value = 0
-        # controls the while loop in method run
-        self.alive = False
-        self.random = random
-
-    def run(self):
-        '''
-        this will run in its own thread via self.start()
-        '''
-        self.alive = True
-        while self.alive:
-            if self.random:
-                tickTime = 0.8 + (random.randint(0, 4)) / 10
-            else:
-                tickTime = 1.0
-
-            time.sleep(tickTime)
-            #print("Tick time: ", tickTime)
-            # update count value
-            self.value += 1
-            #print("     Tick count: ", self.value)
-
-            if self.value == self.interval:
-                sendScheduledMessageQueue.put("YES")
-                self.value = 0
-
-
-    def finish(self):
-        '''
-        close the thread, return final value
-        '''
-        # stop the while loop in method run
-        self.alive = False
-        return self.value
-
 
 if __name__ == "__main__":
-    sendScheduledMessageQueue = queue.Queue()
-
     config_file_name = sys.argv[1]
-    router = RipDemon(config_file_name)
-    timer = RIPTimer(3, False)
+    router = RipDemon(config_file_name, 3, False)
+    router.run()
 
-    router.start()
-    timer.start()
-
-    router.join()
-    timer.join()
-
-    #router.test_printr()
 
 
 
