@@ -9,9 +9,11 @@ import pickle
 from socket import *
 import routing_table
 import rip_packet
+import routing_row
 
 #TODO updating metrics and learntFrom thing and submit
 #TODO when a link goes down, delete entry (garbage collection??)
+#TODO work out how to get initial table populated and how to inform other routers
 
 class RipDemon(threading.Thread):
 
@@ -107,7 +109,10 @@ class RipDemon(threading.Thread):
 
     def process_route_entry(self, row, sending_router_id):
 
+
         if row.getNextHopPort() in self.routing_table.getInputPorts():
+            return
+        elif row in self.routing_table.getRoutingTable():
             return
 
         destination_router = row.getDestId()
@@ -124,8 +129,14 @@ class RipDemon(threading.Thread):
                 prelim_dist = int(metric_to_use) + new_distance
                 print(prelim_dist, old_row.getLinkCost())
                 if prelim_dist < old_row.getLinkCost():
-                    self.routing_table.addToRoutingTable(row)
-                    print("Added entry routing table")
+                    row.updateLinkCost(prelim_dist)
+                    row.updateNextHopId(sending_router_id)
+
+                    if row not in self.routing_table.getRoutingTable():
+                        self.routing_table.addToRoutingTable(row)
+                        print("Added entry routing table")
+
+                        #TODO remove the old entry
 
 
 
