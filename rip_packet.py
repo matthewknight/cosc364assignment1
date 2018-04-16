@@ -19,8 +19,17 @@ class RIPPacket(object):
         self.router_id = router_id
         self.rip_entries = rip_entries
 
-##class RIPEntry(object):
-  #  def __init__(self):
+    def getCommand(self):
+        return self.command
+
+    def getVersion(self):
+        return self.version
+
+    def getRouterId(self):
+        return self.router_id
+
+    def getRIPEntries(self):
+        return self.rip_entries
 
 
 

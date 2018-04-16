@@ -8,11 +8,10 @@ import random
 import pickle
 from socket import *
 import routing_table
-import routing_row
+import rip_packet
 
 #TODO updating metrics and learntFrom thing and submit
 #TODO when a link goes down, delete entry (garbage collection??)
-
 
 class RipDemon(threading.Thread):
 
@@ -37,7 +36,6 @@ class RipDemon(threading.Thread):
         self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
-        self.triggeredUpdate()
 
 
     def socket_creator(self):
@@ -56,30 +54,36 @@ class RipDemon(threading.Thread):
             for s in readable:
                 packet, addr = s.recvfrom(2048)
 
-                unpickledPacket = pickle.loads(packet)
-                print("Received packet from {0} with ID {1}".format(addr, unpickledPacket.getRouterId()))
+                unpickledRIPReceivedPacket = pickle.loads(packet)
 
                 identical_entry_found = False
-                for found_row in unpickledPacket.getRoutingTable():
+
+                for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
                             identical_entry_found = True
-                    if unpickledPacket.getRouterId() != self.routing_id and identical_entry_found == False:
-                        self.routing_table.addToRoutingTable(found_row)
+                    if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
+                        print("Added entry from packet from {0} with ID {1}".format(addr,
+                                                                                    unpickledRIPReceivedPacket.getRouterId()))
 
+                        self.routing_table.addToRoutingTable(found_row)
 
             if not sendScheduledMessageQueue.empty():
                 print("//SENDING MESSAGE//\n")
-                self.triggeredUpdate()
+                self.periodic_update()
                 sendScheduledMessageQueue.queue.clear()
 
+    def triggered_update(self):
+        print("Yeet")
+        #TODO
 
-    def triggeredUpdate(self):
+    def periodic_update(self):
         for entry in self.routing_table.getRoutingTable():
             portToSend = entry.getNextHopPort()
             if portToSend != 0:
-                dataToSend = pickle.dumps(self.routing_table)
-                self.input_sockets_list[0].sendto(dataToSend, ("127.0.0.1", portToSend))
+                packetToSend = rip_packet.RIPPacket(1, self.routing_id, self.routing_table)
+                pickledPacketToSend = pickle.dumps(packetToSend)
+                self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
 
     def config_file_check(self, data):
         """The most graceful check to see if the config file has all required attributes."""
@@ -116,6 +120,11 @@ class RipDemon(threading.Thread):
         # stop the while loop in method run
         self.alive = False
         return self.value
+
+
+
+
+
 
 
 class RIPTimer(threading.Thread):
