@@ -72,10 +72,10 @@ class RipDemon(threading.Thread):
                         if current_row.row_as_list() == found_row.row_as_list():
                             identical_entry_found = True
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
-                        print("Added entry from packet from {0} with ID {1}".format(addr,
-                                                                                    unpickledRIPReceivedPacket.getRouterId()))
 
-                        self.routing_table.addToRoutingTable(found_row)
+
+                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId())
+                        print(self.routing_table.getRoutingTable())
 
             self.timer_tick()
 
@@ -102,6 +102,32 @@ class RipDemon(threading.Thread):
             print("//SENDING MESSAGE//\n")
             self.periodic_update()
             self.ready_for_periodic_update = False
+
+
+
+    def process_route_entry(self, row, sending_router_id):
+
+        if row.getNextHopPort() in self.routing_table.getInputPorts():
+            return
+
+        destination_router = row.getDestId()
+        new_distance = row.getLinkCost()
+        for old_row in self.routing_table.getRoutingTable():
+            outputs = self.output_ports.split(',')
+            for output_entry in outputs:
+                output_entry = output_entry.split('-')
+                if output_entry[2] == sending_router_id:
+                    metric_to_use = output_entry[1]
+
+            if destination_router == old_row.getDestId():
+                # process to see if new route is quicker than old, then add
+                prelim_dist = int(metric_to_use) + new_distance
+                print(prelim_dist, old_row.getLinkCost())
+                if prelim_dist < old_row.getLinkCost():
+                    self.routing_table.addToRoutingTable(row)
+                    print("Added entry routing table")
+
+
 
     def triggered_update(self):
         print("Yeet")
