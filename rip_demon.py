@@ -66,7 +66,7 @@ class RipDemon(threading.Thread):
 
 
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId())
-
+                        print(self.routing_table.getRoutingTable())
 
             if not sendScheduledMessageQueue.empty():
                 print("//SENDING MESSAGE//\n")
@@ -92,7 +92,7 @@ class RipDemon(threading.Thread):
             if destination_router == old_row.getDestId():
                 # process to see if new route is quicker than old, then add
                 prelim_dist = int(metric_to_use) + new_distance
-
+                print(prelim_dist, old_row.getLinkCost())
                 if prelim_dist < old_row.getLinkCost():
                     self.routing_table.addToRoutingTable(row)
                     print("Added entry routing table")

@@ -8,7 +8,7 @@ class RoutingTable(object):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.table = []
-        self.populateTable()
+        #self.populateTable()
         print(self.table)
 
     def populateTable(self):
