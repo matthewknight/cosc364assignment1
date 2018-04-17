@@ -35,6 +35,9 @@ class RoutingRow(object):
     def updateNextHopId(self, hop):
         self.nextHopId = hop
 
+    def updateNextHopPort(self, port):
+        self.nextHopPort = port
+
     def row_as_list(self):
         return [self.nextHopPort, self.linkCost, self.destId, self.nextHopId, self.learnedFrom]
 

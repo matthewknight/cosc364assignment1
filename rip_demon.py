@@ -14,6 +14,7 @@ import routing_row
 #TODO updating metrics and learntFrom thing and submit
 #TODO when a link goes down, delete entry (garbage collection??)
 #TODO work out how to get initial table populated and how to inform other routers
+#TODO update next hop port in routing table, line 80
 
 class RipDemon(threading.Thread):
 
@@ -76,7 +77,7 @@ class RipDemon(threading.Thread):
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
 
 
-                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId())
+                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId()) # todo need to add port_to_send
                         print(self.routing_table.getRoutingTable())
 
             self.timer_tick()
@@ -107,7 +108,7 @@ class RipDemon(threading.Thread):
 
 
 
-    def process_route_entry(self, row, sending_router_id):
+    def process_route_entry(self, row, sending_router_id, port_to_send):
 
 
         if row.getNextHopPort() in self.routing_table.getInputPorts():
@@ -132,11 +133,13 @@ class RipDemon(threading.Thread):
                     row.updateLinkCost(prelim_dist)
                     row.updateNextHopId(sending_router_id)
 
+                    #TODO update the next hop port, need to figure out how to get the port we want to set it to, line 80 also
+                    #row.updateNextHopPort(port_to_send)
                     if row not in self.routing_table.getRoutingTable():
+                        self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(row)
                         print("Added entry routing table")
-
-                        #TODO remove the old entry
+                        print("Removed old entry from the routing table")
 
 
 
@@ -170,6 +173,8 @@ class RipDemon(threading.Thread):
         except AttributeError:
             print("Output ports not specified in config file. Exiting...")
             exit(0)
+
+
 
     def test_printr(self):
         print("Routing id: " + self.routing_id)

@@ -45,8 +45,13 @@ class RoutingTable(object):
         self.table.append(new_row)
 
 
+    def removeFromRoutingTable(self, destId):
+        index = 0
+        for row in self.table:
 
-
+            if row.row_as_list()[2] == int(destId):
+                del self.table[index]
+            index += 1
 
 
 
