@@ -38,6 +38,8 @@ class RoutingRow(object):
     def updateNextHopPort(self, port):
         self.nextHopPort = port
 
+    def updateLearntFrom(self, id):
+        self.learnedFrom = id
     def row_as_list(self):
         return [self.nextHopPort, self.linkCost, self.destId, self.nextHopId, self.learnedFrom]
 

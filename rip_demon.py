@@ -67,9 +67,8 @@ class RipDemon(threading.Thread):
                 packet, addr = s.recvfrom(2048)
 
                 unpickledRIPReceivedPacket = pickle.loads(packet)
-
                 identical_entry_found = False
-
+                port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
@@ -77,7 +76,7 @@ class RipDemon(threading.Thread):
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
 
 
-                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId()) # todo need to add port_to_send
+                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send) # todo need to add port_to_send
                         print(self.routing_table.getRoutingTable())
 
             self.timer_tick()
@@ -132,9 +131,8 @@ class RipDemon(threading.Thread):
                 if prelim_dist < old_row.getLinkCost():
                     row.updateLinkCost(prelim_dist)
                     row.updateNextHopId(sending_router_id)
-
-                    #TODO update the next hop port, need to figure out how to get the port we want to set it to, line 80 also
-                    #row.updateNextHopPort(port_to_send)
+                    row.updateLearntFrom(sending_router_id)
+                    row.updateNextHopPort(port_to_send)
                     if row not in self.routing_table.getRoutingTable():
                         self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(row)
