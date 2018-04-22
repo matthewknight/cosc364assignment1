@@ -10,7 +10,6 @@ class RoutingRow(object):
     def __repr__(self):
         return "{0.nextHopPort} {0.linkCost} {0.destId} {0.nextHopId} {0.learnedFrom}".format(self)
 
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 

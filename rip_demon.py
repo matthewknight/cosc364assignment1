@@ -11,10 +11,10 @@ import routing_table
 import rip_packet
 import routing_row
 
-#TODO updating metrics and learntFrom thing and submit
+
 #TODO when a link goes down, delete entry (garbage collection??)
 #TODO work out how to get initial table populated and how to inform other routers
-#TODO update next hop port in routing table, line 80
+
 
 class RipDemon(threading.Thread):
 
