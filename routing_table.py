@@ -1,4 +1,4 @@
-import routing_row
+import routing_row, rip_route
 
 
 class RoutingTable(object):
@@ -8,13 +8,14 @@ class RoutingTable(object):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.table = []
+        self.routesWithTimers = []
         self.populateTable()
         print(self.table)
 
     def populateTable(self):
         """Populate the routing table with the information learned from the Configuration files"""
         self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0)
-        self.addToRoutingTable(self_entry)
+        #self.addToRoutingTable(self_entry)
         output_list = self.output_ports.split(', ')
 
         for i in output_list:
@@ -34,6 +35,9 @@ class RoutingTable(object):
     def getRoutingTable(self):
         return self.table
 
+    def getRoutesWithTimers(self):
+        return self.routesWithTimers
+
     def getRouterId(self):
         return self.routing_id
 
@@ -48,6 +52,7 @@ class RoutingTable(object):
             raise TypeError("Non routing-row provided as arg")
 
         self.table.append(new_row)
+        self.routesWithTimers.append(rip_route.Route(new_row))
 
 
     def removeFromRoutingTable(self, destId):

@@ -38,7 +38,7 @@ class RipDemon(threading.Thread):
         self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
         self.alive = False
-        self.route_timers = []
+
         print(self.routing_table.getPrettyTable())
 
         # Timer settings
@@ -46,6 +46,7 @@ class RipDemon(threading.Thread):
         self.timer_value = 0
         self.random = random
         self.ready_for_periodic_update = False
+        self.ready_for_triggered_update = False
 
 
     def socket_creator(self):
@@ -64,16 +65,20 @@ class RipDemon(threading.Thread):
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
-                print("received packet from ", addr)
-
                 unpickledRIPReceivedPacket = pickle.loads(packet)
                 identical_entry_found = False
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
 
+                    for Route in self.routing_table.getRoutesWithTimers():
+                        if int(Route.row.getDestId()) == int(found_row.getDestId()):
+                            print("Reseting timer to route ", found_row.getDestId())
+                            Route.resetTime()
+
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
                             identical_entry_found = True
+
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
 
@@ -103,7 +108,15 @@ class RipDemon(threading.Thread):
             self.periodic_update()
             self.ready_for_periodic_update = False
 
+        for Route in self.routing_table.getRoutesWithTimers():
+            Route.incrementTime()
+            if Route.getTimeoutTime() == 5:
+                print("Route to ", Route.getRow().getDestId(), " has TIMEOUT!!")
+
+
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
+
+
         row_added = False
         # If next hop port is one of your own, skip this entry
         if new_row.getNextHopPort() in self.routing_table.getInputPorts():
@@ -150,6 +163,8 @@ class RipDemon(threading.Thread):
                 # print("Adding new router")
                 new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
                 self.routing_table.addToRoutingTable(new_row)
+                print("Adding new neighbour ", new_row.getDestId())
+                print(self.routing_table.getPrettyTable())
 
 
 
@@ -158,7 +173,7 @@ class RipDemon(threading.Thread):
             if row.getLinkCost == 16:
                 pass
         # if metric == 16, do this
-        #TODO
+        #TODO CALL THIS METHOD WHEN A ROUTE DIES
 
     def periodic_update(self):
         output_list = self.output_ports.split(", ")
