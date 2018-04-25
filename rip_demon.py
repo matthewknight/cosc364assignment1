@@ -192,6 +192,7 @@ class RipDemon(threading.Thread):
         print("Output ports: " + self.output_ports)
 
 
+
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
     router = RipDemon(config_file_name, 3, True)
