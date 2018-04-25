@@ -142,7 +142,9 @@ class RipDemon(threading.Thread):
 
 
     def triggered_update(self):
-        print("Yeet")
+        for row in self.routing_table.getRoutingTable():
+            if row.getLinkCost == 16:
+                pass
         # if metric == 16, do this
         #TODO
 
