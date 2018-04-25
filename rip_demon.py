@@ -26,7 +26,7 @@ class RipDemon(threading.Thread):
        Where X is the config file to be used (1-10)
     """
 
-    def __init__(self, filename, intervalBetweenMessages=1, random=False):
+    def __init__(self, filename, intervalBetweenMessages=1, random=False, timeoutPeriod=30):
         threading.Thread.__init__(self)
         self.filename = filename
         data = json.load(open(self.filename))
@@ -44,6 +44,7 @@ class RipDemon(threading.Thread):
         # Timer settings
         self.timer_interval = intervalBetweenMessages
         self.timer_value = 0
+        self.timeout_period = timeoutPeriod
         self.random = random
         self.ready_for_periodic_update = False
         self.ready_for_triggered_update = False
@@ -70,10 +71,7 @@ class RipDemon(threading.Thread):
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
 
-                    for Route in self.routing_table.getRoutesWithTimers():
-                        if int(Route.row.getDestId()) == int(found_row.getDestId()):
-                            print("Reseting timer to route ", found_row.getDestId())
-                            Route.resetTime()
+
 
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
@@ -110,14 +108,15 @@ class RipDemon(threading.Thread):
 
         for Route in self.routing_table.getRoutesWithTimers():
             Route.incrementTime()
-            if Route.getTimeoutTime() == 5:
+            if Route.getTimeoutTime() == self.timeout_period:
                 print("Route to ", Route.getRow().getDestId(), " has TIMEOUT!!")
 
+    def reset_timers_of_dest(self, destId):
+        for Route in self.routing_table.getRoutesWithTimers():
+            if int(Route.row.getDestId()) == int(destId):
+                Route.resetTime()
 
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
-
-
-        row_added = False
         # If next hop port is one of your own, skip this entry
         if new_row.getNextHopPort() in self.routing_table.getInputPorts():
             return
@@ -158,6 +157,7 @@ class RipDemon(threading.Thread):
             entryExists = False
             for current_row in self.routing_table.getRoutingTable():
                 if current_row.getDestId() == new_row.getDestId():
+                    self.reset_timers_of_dest(new_row.getDestId())
                     entryExists = True
             if not entryExists:
                 # print("Adding new router")
@@ -224,7 +224,7 @@ class RipDemon(threading.Thread):
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
-    router = RipDemon(config_file_name, 3, True)
+    router = RipDemon(config_file_name, 3, True, 15)
     router.run()
 
 
