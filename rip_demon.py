@@ -61,7 +61,6 @@ class RipDemon(threading.Thread):
     def run(self):
         while True:
 
-
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
@@ -70,14 +69,14 @@ class RipDemon(threading.Thread):
                 identical_entry_found = False
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
+
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
                             identical_entry_found = True
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
-
-
-                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send) # todo need to add port_to_send
-                        print(self.routing_table.getRoutingTable())
+                        #print(found_row)
+                        self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
+            print(self.routing_table.getRoutingTable())
 
             self.timer_tick()
 
@@ -105,14 +104,11 @@ class RipDemon(threading.Thread):
             self.periodic_update()
             self.ready_for_periodic_update = False
 
-
-
     def process_route_entry(self, row, sending_router_id, port_to_send):
-
-
-        if row.getNextHopPort() in self.routing_table.getInputPorts():
-            return
-        elif row in self.routing_table.getRoutingTable():
+        row_added = False
+        #if row.getNextHopPort() in self.routing_table.getInputPorts():
+         #   return
+        if row in self.routing_table.getRoutingTable():
             return
 
         destination_router = row.getDestId()
@@ -136,13 +132,18 @@ class RipDemon(threading.Thread):
                     if row not in self.routing_table.getRoutingTable():
                         self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(row)
+                        row_added = True
                         print("Added entry routing table")
                         print("Removed old entry from the routing table")
-
+        if not row_added:
+                #Add new entry to table
+            print("Added new entry to row")
+            self.routing_table.addToRoutingTable(row)
 
 
     def triggered_update(self):
         print("Yeet")
+        # if metric == 16, do this
         #TODO
 
     def periodic_update(self):
@@ -158,7 +159,7 @@ class RipDemon(threading.Thread):
 
         try:
             self.routing_id = data["router-id"]
-        except AttributeError:
+        except KeyError:
             print("Router id not specified in config file. Exiting...")
             exit(0)
         try:
@@ -168,7 +169,7 @@ class RipDemon(threading.Thread):
             exit(0)
         try:
             self.output_ports = data["outputs"]
-        except AttributeError:
+        except KeyError:
             print("Output ports not specified in config file. Exiting...")
             exit(0)
 
