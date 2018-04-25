@@ -30,7 +30,7 @@ class RoutingTable(object):
     def getPrettyTable(self):
         for foundRow in self.table:
             if foundRow is not None:
-                print("-> {0.destId}, $ = {0.linkCost}, Next hop: {0.nextHopId}".format(foundRow))
+                print("-> {0.destId}, $ = {0.linkCost}, Next hop: {0.nextHopId}, Learned from: {0.learnedFrom}".format(foundRow))
 
     def getRoutingTable(self):
         return self.table

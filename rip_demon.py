@@ -80,7 +80,6 @@ class RipDemon(threading.Thread):
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
 
-
             self.timer_tick()
 
 
@@ -162,6 +161,9 @@ class RipDemon(threading.Thread):
             if not entryExists:
                 # print("Adding new router")
                 new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
+                new_row.updateLearntFrom(sending_router_id)
+                new_row.updateNextHopId(sending_router_id)
+                new_row.updateNextHopPort(port_to_send)
                 self.routing_table.addToRoutingTable(new_row)
                 print("Adding new neighbour ", new_row.getDestId())
                 print(self.routing_table.getPrettyTable())
@@ -181,6 +183,12 @@ class RipDemon(threading.Thread):
             entry = entry.split('-')
             entry = entry[0]
             portToSend = int(entry)
+
+            # POISON REVERSE
+            # 
+
+
+
 
             # Dont send to self
             if portToSend != 0:
@@ -221,6 +229,7 @@ class RipDemon(threading.Thread):
         print("Routing id: " + self.routing_id)
         print(self.input_ports)
         print("Output ports: " + self.output_ports)
+
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
