@@ -76,7 +76,7 @@ class RipDemon(threading.Thread):
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
                         #print(found_row)
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
-            print(self.routing_table.getRoutingTable())
+            print(self.routing_table.getPrettyTable())
 
             self.timer_tick()
 
@@ -106,24 +106,28 @@ class RipDemon(threading.Thread):
 
     def process_route_entry(self, row, sending_router_id, port_to_send):
         row_added = False
-        #if row.getNextHopPort() in self.routing_table.getInputPorts():
-         #   return
+        if row.getNextHopPort() in self.routing_table.getInputPorts():
+            return
         if row in self.routing_table.getRoutingTable():
             return
 
         destination_router = row.getDestId()
         new_distance = row.getLinkCost()
+
         for old_row in self.routing_table.getRoutingTable():
             outputs = self.output_ports.split(',')
+
             for output_entry in outputs:
                 output_entry = output_entry.split('-')
                 if output_entry[2] == sending_router_id:
-                    metric_to_use = output_entry[1]
+                    cost_to_router_row_received_from = output_entry[1]
 
             if destination_router == old_row.getDestId():
-                # process to see if new route is quicker than old, then add
-                prelim_dist = int(metric_to_use) + new_distance
-                print(prelim_dist, old_row.getLinkCost())
+                # Process to see if new route is quicker than old, then add
+                prelim_dist = int(cost_to_router_row_received_from) + new_distance
+                # print(prelim_dist, old_row.getLinkCost())
+                print("checking costs")
+
                 if prelim_dist < old_row.getLinkCost():
                     row.updateLinkCost(prelim_dist)
                     row.updateNextHopId(sending_router_id)
@@ -133,12 +137,8 @@ class RipDemon(threading.Thread):
                         self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(row)
                         row_added = True
-                        print("Added entry routing table")
+                        print("Added new route -> {0}, $ = {1}", row.getDestId(), row.getLinkCost())
                         print("Removed old entry from the routing table")
-        if not row_added:
-                #Add new entry to table
-            print("Added new entry to row")
-            self.routing_table.addToRoutingTable(row)
 
 
     def triggered_update(self):

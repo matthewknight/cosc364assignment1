@@ -27,7 +27,8 @@ class RoutingTable(object):
             self.addToRoutingTable(row)
 
     def getPrettyTable(self):
-        print("DST | COST | NEXT PORT")
+        for foundRow in self.table:
+            print("-> {0.destId}, $ = {0.linkCost}, Next hop: {0.nextHopId}".format(foundRow))
 
     def getRoutingTable(self):
         return self.table
