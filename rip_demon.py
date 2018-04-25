@@ -175,31 +175,37 @@ class RipDemon(threading.Thread):
 
     def config_file_check(self, data):
         """The most graceful check to see if the config file has all required attributes."""
-
         try:
             self.routing_id = data["router-id"]
+            if int(self.routing_id) < 1 or int(self.routing_id) > 64000:
+                raise ValueError("Invalid router ID(s). Exiting...")
         except KeyError:
             print("Router id not specified in config file. Exiting...")
             exit(0)
         try:
             self.input_ports = data["input-ports"]
+            for port in self.input_ports:
+                if port < 1024 or port > 64000:
+                    raise ValueError("Input port number(s) out of range. Exiting...")
         except KeyError:
             print("Input ports not specified in config file. Exiting...")
             exit(0)
         try:
             self.output_ports = data["outputs"]
+            output_test_list = self.output_ports.split(', ')
+            for entry in output_test_list:
+                port = entry.split('-')
+                port = int(port[0])
+                if port < 1024 or port > 64000:
+                    raise ValueError("Output port(s) out of range. Exiting...")
         except KeyError:
             print("Output ports not specified in config file. Exiting...")
             exit(0)
-
-
 
     def test_printr(self):
         print("Routing id: " + self.routing_id)
         print(self.input_ports)
         print("Output ports: " + self.output_ports)
-
-
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
