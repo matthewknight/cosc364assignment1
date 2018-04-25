@@ -64,6 +64,7 @@ class RipDemon(threading.Thread):
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
+                print("received packet from ", addr)
 
                 unpickledRIPReceivedPacket = pickle.loads(packet)
                 identical_entry_found = False
@@ -104,8 +105,10 @@ class RipDemon(threading.Thread):
 
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
         row_added = False
+        # If next hop port is one of your own, skip this entry
         if new_row.getNextHopPort() in self.routing_table.getInputPorts():
             return
+        # If row already exists exactly, skip this entry also
         if new_row in self.routing_table.getRoutingTable():
             return
 
@@ -158,8 +161,13 @@ class RipDemon(threading.Thread):
         #TODO
 
     def periodic_update(self):
-        for entry in self.routing_table.getRoutingTable():
-            portToSend = entry.getNextHopPort()
+        output_list = self.output_ports.split(", ")
+        for entry in output_list:
+            entry = entry.split('-')
+            entry = entry[0]
+            portToSend = int(entry)
+
+            # Dont send to self
             if portToSend != 0:
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, self.routing_table)
                 pickledPacketToSend = pickle.dumps(packetToSend)
