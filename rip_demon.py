@@ -123,7 +123,7 @@ class RipDemon(threading.Thread):
                 Route.incrementGarbageCollectionTime()
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
                     print("Route to ", Route.getRow().getDestId(), " has BEEN DELETED!!")
-
+                    #self.routing_table.removeFromRoutingTable(Route.getRow().getDestId())
 
 
 
