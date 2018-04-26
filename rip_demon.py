@@ -141,6 +141,8 @@ class RipDemon(threading.Thread):
         for Row in self.routing_table.getRoutingTable():
             if Row == route.getRow():
                 Row.updateLinkCost(16)
+                #todo do we have to remove it here? think its ruining things
+                #self.routing_table.removeFromRoutingTable(Row.getDestId())
                 Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
@@ -191,7 +193,7 @@ class RipDemon(threading.Thread):
             for current_row in self.routing_table.getRoutingTable():
                 if current_row.getDestId() == new_row.getDestId():
                     self.reset_timers_of_dest(new_row.getDestId())
-                    print("Heard back about ", new_row.getDestId())
+                    #print("Heard back about ", new_row.getDestId())
                     entryExists = True
             if not entryExists:
                 # print("Adding new router")
@@ -243,21 +245,27 @@ class RipDemon(threading.Thread):
         output_list = self.output_ports.split(", ")
         for entry in output_list:
             entry = entry.split('-')
+            outbound_router_id = entry[2]
             entry = entry[0]
             portToSend = int(entry)
 
-            # POISON REVERSE
-            #
-
-
-
+            # TODO split POISON REVERSE
 
             # Dont send to self
             if portToSend != 0:
-                packetToSend = rip_packet.RIPPacket(1, self.routing_id, self.routing_table)
+                tableToSend = copy.deepcopy(self.routing_table)
+                #populate table to send, removing any links learned from this neighbour (split horizon)
+                for entry in tableToSend.getRoutingTable():
+
+                    if int(outbound_router_id) == int(entry.getLearntFromRouter()):
+
+                        tableToSend.removeFromRoutingTable(entry.getDestId())
+                packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
                 self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
-        print(self.routing_table.getRoutesWithTimers())
+        #print(self.routing_table.getRoutesWithTimers())
+        print("My Routing Table")
+        print(self.routing_table.getPrettyTable())
 
     def config_file_check(self, data):
         """The most graceful check to see if the config file has all required attributes."""
