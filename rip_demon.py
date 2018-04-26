@@ -59,7 +59,6 @@ class RipDemon(threading.Thread):
             self.input_sockets_list.append(server_socket)
             print("Waiting on port " + str(port))
 
-
     def run(self):
         while True:
 
@@ -70,8 +69,6 @@ class RipDemon(threading.Thread):
                 identical_entry_found = False
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
-
-
 
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
