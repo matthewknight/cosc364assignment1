@@ -124,6 +124,9 @@ class RipDemon(threading.Thread):
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
                     print("Route to ", Route.getRow().getDestId(), " has BEEN DELETED!!")
 
+
+
+
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
@@ -141,8 +144,10 @@ class RipDemon(threading.Thread):
         for Row in self.routing_table.getRoutingTable():
             if Row == route.getRow():
                 Row.updateLinkCost(16)
+
                 #todo do we have to remove it here? think its ruining things
                 #self.routing_table.removeFromRoutingTable(Row.getDestId())
+                self.triggered_update()
                 Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
