@@ -4,10 +4,22 @@ class Route(object):
         ##TODO change row to just destId -> TMI
         self.row = row
         self.timeoutTime = 0
+        self.hasTimeout = False
         self.garbageCollectionTime = 0
 
-    def incrementTime(self):
+    def __repr__(self):
+        return "-> {0.row.destId} {0.hasTimeout} Time: {0.timeoutTime}\n".format(self)
+
+    def setRouteAsTimedOut(self):
+        self.hasTimeout = True
+
+    def hasTimedOut(self):
+        return self.hasTimeout
+
+    def incrementTimeoutTime(self):
         self.timeoutTime += 1
+
+    def incrementGarbageCollectionTime(self):
         self.garbageCollectionTime += 1
 
     def getTimeoutTime(self):

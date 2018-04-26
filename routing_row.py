@@ -5,6 +5,7 @@ class RoutingRow(object):
         self.linkCost = int(linkCost)
         self.destId = int(destId)
         self.nextHopId = int(nextHopId)
+        self.changed = False
         self.learnedFrom = int(learnedFrom)
 
     def __repr__(self):
@@ -13,6 +14,14 @@ class RoutingRow(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def hasChanged(self):
+        return self.changed
+
+    def resetChanged(self):
+        self.changed = False
+
+    def setHasBeenChanged(self):
+        self.changed = True
 
     def getNextHopPort(self):
         return self.nextHopPort

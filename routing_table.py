@@ -58,9 +58,12 @@ class RoutingTable(object):
     def removeFromRoutingTable(self, destId):
         index = 0
         for row in self.table:
-
             if row.row_as_list()[2] == int(destId):
                 del self.table[index]
+            for Route in self.routesWithTimers:
+                if Route.getRow().getDestId() == destId:
+                    print("deleting route timer -> ", destId)
+                    self.routesWithTimers.remove(Route)
             index += 1
 
 

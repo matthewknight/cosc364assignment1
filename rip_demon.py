@@ -4,6 +4,7 @@ import select
 import threading
 import time
 import queue
+import copy
 import random
 import pickle
 from socket import *
@@ -26,7 +27,7 @@ class RipDemon(threading.Thread):
        Where X is the config file to be used (1-10)
     """
 
-    def __init__(self, filename, intervalBetweenMessages=1, random=False, timeoutPeriod=30):
+    def __init__(self, filename, intervalBetweenMessages=1, random=False, timeoutPeriod=15, garbageCollectionPeriod=15):
         threading.Thread.__init__(self)
         self.filename = filename
         data = json.load(open(self.filename))
@@ -44,7 +45,10 @@ class RipDemon(threading.Thread):
         # Timer settings
         self.timer_interval = intervalBetweenMessages
         self.timer_value = 0
+        self.triggered_update_cooldown_timer_value = 0
+        self.hasRecentlyTriggeredUpdate = False
         self.timeout_period = timeoutPeriod
+        self.garbage_collection_period = garbageCollectionPeriod
         self.random = random
         self.ready_for_periodic_update = False
         self.ready_for_triggered_update = False
@@ -89,10 +93,8 @@ class RipDemon(threading.Thread):
             tickTime = 1.0
 
         time.sleep(tickTime)
-        #print("Tick time: ", tickTime)
         # update count value
         self.timer_value += 1
-        #print("     Tick count: ", self.timer_value)
 
         if self.timer_value == self.timer_interval:
             self.ready_for_periodic_update = True
@@ -102,10 +104,44 @@ class RipDemon(threading.Thread):
             self.periodic_update()
             self.ready_for_periodic_update = False
 
+        self.check_for_changed_routes()
+
+        # Check if has recently sent a triggered update
+        if self.ready_for_triggered_update:
+            if not self.hasRecentlyTriggeredUpdate:
+                self.triggered_update()
+                self.triggered_update_cooldown_timer_value = 0
+                self.ready_for_triggered_update = False
+                self.hasRecentlyTriggeredUpdate = True
+            else:
+                self.triggered_update_cooldown_timer_value += 1
+                if self.triggered_update_cooldown_timer_value >= (random.randint(1, 5)):
+                    self.hasRecentlyTriggeredUpdate = False
+
         for Route in self.routing_table.getRoutesWithTimers():
-            Route.incrementTime()
-            if Route.getTimeoutTime() == self.timeout_period:
-                print("Route to ", Route.getRow().getDestId(), " has TIMEOUT!!")
+            if Route.hasTimedOut():
+                Route.incrementGarbageCollectionTime()
+                if Route.getGarbageCollectionTime() == self.garbage_collection_period:
+                    print("Route to ", Route.getRow().getDestId(), " has BEEN DELETED!!")
+
+            else:
+                Route.incrementTimeoutTime()
+                if Route.getTimeoutTime() == self.timeout_period:
+                    self.set_row_as_timed_out(Route)
+                    print("Route to ", Route.getRow().getDestId(), " has TIMEOUT!!")
+
+    def check_for_changed_routes(self):
+        for Row in self.routing_table.getRoutingTable():
+            if Row.hasChanged():
+                self.ready_for_triggered_update = True
+                return
+
+    def set_row_as_timed_out(self, route):
+        route.setRouteAsTimedOut()
+        for Row in self.routing_table.getRoutingTable():
+            if Row == route.getRow():
+                Row.updateLinkCost(16)
+                Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
         for Route in self.routing_table.getRoutesWithTimers():
@@ -142,6 +178,7 @@ class RipDemon(threading.Thread):
                     new_row.updateNextHopId(sending_router_id)
                     new_row.updateLearntFrom(sending_router_id)
                     new_row.updateNextHopPort(port_to_send)
+                    new_row.setHasBeenChanged()
                     if new_row not in self.routing_table.getRoutingTable():
                         self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(new_row)
@@ -154,10 +191,12 @@ class RipDemon(threading.Thread):
             for current_row in self.routing_table.getRoutingTable():
                 if current_row.getDestId() == new_row.getDestId():
                     self.reset_timers_of_dest(new_row.getDestId())
+                    print("Heard back about ", new_row.getDestId())
                     entryExists = True
             if not entryExists:
                 # print("Adding new router")
                 new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
+                new_row.setHasBeenChanged()
                 new_row.updateLearntFrom(sending_router_id)
                 new_row.updateNextHopId(sending_router_id)
                 new_row.updateNextHopPort(port_to_send)
@@ -168,13 +207,39 @@ class RipDemon(threading.Thread):
 
 
     def triggered_update(self):
-        for row in self.routing_table.getRoutingTable():
-            if row.getLinkCost == 16:
-                pass
-        # if metric == 16, do this
-        #TODO CALL THIS METHOD WHEN A ROUTE DIES
+        print("Calling triggered update...", self.triggered_update_cooldown_timer_value)
+        print(self.routing_table.getPrettyTable())
+
+        # for row in self.routing_table.getRoutingTable():
+        #     if row.getLinkCost == 16:
+        #         pass
+
+        output_list = self.output_ports.split(", ")
+        for entry in output_list:
+            entry = entry.split('-')
+            entry = entry[0]
+            portToSend = int(entry)
+
+            # Dont send to self
+            if portToSend != 0:
+                tableToSend = copy.deepcopy(self.routing_table)
+                # Remove entries that haven't changed
+                for Row in tableToSend.getRoutingTable():
+                    if not Row.hasChanged():
+                        tableToSend.removeFromRoutingTable(Row.getDestId())
+
+
+
+                packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
+                pickledPacketToSend = pickle.dumps(packetToSend)
+                self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
+
+        # Set the changed flag to false in our current routing table
+        for ourRow in self.routing_table.getRoutingTable():
+            ourRow.resetChanged()
 
     def periodic_update(self):
+        print("Calling periodic update...")
         output_list = self.output_ports.split(", ")
         for entry in output_list:
             entry = entry.split('-')
@@ -182,7 +247,7 @@ class RipDemon(threading.Thread):
             portToSend = int(entry)
 
             # POISON REVERSE
-            # 
+            #
 
 
 
@@ -192,6 +257,7 @@ class RipDemon(threading.Thread):
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, self.routing_table)
                 pickledPacketToSend = pickle.dumps(packetToSend)
                 self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
+        print(self.routing_table.getRoutesWithTimers())
 
     def config_file_check(self, data):
         """The most graceful check to see if the config file has all required attributes."""
@@ -230,7 +296,7 @@ class RipDemon(threading.Thread):
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
-    router = RipDemon(config_file_name, 3, True, 15)
+    router = RipDemon(config_file_name, 3, True, 15, 15)
     router.run()
 
 
