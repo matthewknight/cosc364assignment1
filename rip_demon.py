@@ -146,8 +146,8 @@ class RipDemon(threading.Thread):
                 Row.updateLinkCost(16)
 
                 #todo do we have to remove it here? think its ruining things
-                #self.routing_table.removeFromRoutingTable(Row.getDestId())
-                self.triggered_update()
+                self.routing_table.removeFromRoutingTable(Row.getDestId())
+                #self.triggered_update()
                 Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
@@ -169,7 +169,7 @@ class RipDemon(threading.Thread):
         for old_row in self.routing_table.getRoutingTable():
             outputs = self.output_ports.split(',')
 
-            cost_to_router_row_received_from = 16
+            #cost_to_router_row_received_from = 16
             for current_row in self.routing_table.getRoutingTable():
                 if int(current_row.getDestId()) == int(sending_router_id):
                     cost_to_router_row_received_from = current_row.getLinkCost()
@@ -198,10 +198,10 @@ class RipDemon(threading.Thread):
             for current_row in self.routing_table.getRoutingTable():
                 if current_row.getDestId() == new_row.getDestId():
                     self.reset_timers_of_dest(new_row.getDestId())
-                    #print("Heard back about ", new_row.getDestId())
+
                     entryExists = True
             if not entryExists:
-                # print("Adding new router")
+
                 new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
                 new_row.setHasBeenChanged()
                 new_row.updateLearntFrom(sending_router_id)
@@ -216,10 +216,6 @@ class RipDemon(threading.Thread):
     def triggered_update(self):
         print("Calling triggered update...", self.triggered_update_cooldown_timer_value)
         print(self.routing_table.getPrettyTable())
-
-        # for row in self.routing_table.getRoutingTable():
-        #     if row.getLinkCost == 16:
-        #         pass
 
         output_list = self.output_ports.split(", ")
         for entry in output_list:
