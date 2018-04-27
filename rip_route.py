@@ -7,7 +7,7 @@ class Route(object):
         self.garbageCollectionTime = 0
 
     def __repr__(self):
-        return "-> {0.row.destId} {0.hasTimeout} Time: {0.timeoutTime}\n".format(self)
+        return "-> {0.destId} {0.hasTimeout} Time: {0.timeoutTime}\n".format(self)
 
     def setRouteAsTimedOut(self):
         self.hasTimeout = True

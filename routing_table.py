@@ -68,17 +68,24 @@ class RoutingTable(object):
         self.table.append(new_row)
         #self.neighbourTimers.append(rip_route.Route(new_row))
 
-
-    def removeFromRoutingTable(self, destId):
+    def removeToSwap(self, destId):
         index = 0
         for row in self.table:
             if row.row_as_list()[2] == int(destId):
                 del self.table[index]
-            # for Route in self.neighbourTimers:
-            #     if Route.getRow().getDestId() == destId:
-            #         print("deleting route timer -> ", destId)
-            #         self.neighbourTimers.remove(Route)
             index += 1
+
+    def removeFromRoutingTable(self, destId):
+        for Row in self.table:
+            print("ID to delete: {}, destId: {} nextHop: {} learntFrom: {}".format(destId, Row.getDestId(), Row.getNextHopId(), Row.getLearntFromRouter()))
+            print(Row.getDestId() == int(destId))
+            print(Row.getNextHopId() == int(destId))
+            print(Row.getLearntFromRouter() == int(destId))
+
+            if int(Row.getDestId()) == int(destId) or int(Row.getNextHopId()) == int(destId) or \
+                    (Row.getLearntFromRouter()) == int(destId):
+                print("deleting row ", Row)
+                self.table.remove(Row)
 
 
 

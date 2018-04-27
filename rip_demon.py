@@ -129,22 +129,39 @@ class RipDemon(threading.Thread):
             if Route.hasTimedOut():
                 Route.incrementGarbageCollectionTime()
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
-                    print("Route to ", Route.getDestId(), " has BEEN DELETED!!")
+                    print("Route to ", Route.getDestId(), " has BEEN DELETED!!/////////////////////////////////////")
                     self.routing_table.removeFromRoutingTable(Route.getDestId())
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
                    # if Route.getRow().getLearntFromRouter() != 0:
                     self.set_row_as_timed_out(Route)
-                    print("Route to", Route.getDestId(), "has TIMEOUT!!")
+                    print("Route to", Route.getDestId(), "has TIMEOUT!!///////////////////////////////////////////")
 
     def check_for_changed_routes(self):
         for Row in self.routing_table.getRoutingTable():
             if Row.hasChanged():
                 self.ready_for_triggered_update = True
                 return
+
+        neighbour_rows = []
+        non_neighbour_rows = copy.deepcopy(self.routing_table.getRoutingTable())
+
+        for Route in self.routing_table.getRoutesWithTimers():
+            for Row in self.routing_table.getRoutingTable():
+                if int(Route.getDestId()) == int(Row.getDestId()):
+                    neighbour_rows.append(Row)
+                if int(Route.getDestId()) == int(Row.getDestId()) and not Route.hasTimedOut() and Row.getLinkCost() == 16:
+                    self.routing_table.removeFromRoutingTable(Route.getDestId())
+                    return
+
+        for Row in neighbour_rows:
+            non_neighbour_rows.remove(Row)
+
+        for Row in non_neighbour_rows:
             if Row.getLinkCost() == 16:
                 self.routing_table.removeFromRoutingTable(Row.getDestId())
+
 
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
@@ -181,10 +198,14 @@ class RipDemon(threading.Thread):
             for row in self.routing_table.getRoutingTable():
                 if row.getDestId() == destination_router:
                     row.updateLinkCost(16)
+                    row.setHasBeenChanged()
                     break
 
 
         for old_row in self.routing_table.getRoutingTable():
+            # Make the route non modifiable when it hits 16
+            if old_row.getLinkCost() == 16:
+                return
             #TODO remove this
             outputs = self.output_ports.split(',')
 
@@ -204,9 +225,6 @@ class RipDemon(threading.Thread):
             if destination_router == old_row.getDestId() and costFoundFlag:
                 # Process to see if new route is quicker than old, then add
                 prelim_dist = int(cost_to_router_row_received_from) + new_distance
-                if prelim_dist >= 16:
-                    print('2big skipping')
-                    return
 
                 if prelim_dist < old_row.getLinkCost():
                     new_row.updateLinkCost(prelim_dist)
@@ -220,7 +238,7 @@ class RipDemon(threading.Thread):
 
 
                     if new_row not in self.routing_table.getRoutingTable():
-                        self.routing_table.removeFromRoutingTable(destination_router)
+                        self.routing_table.removeToSwap(destination_router)
                         self.routing_table.addToRoutingTable(new_row)
                         row_added = True
                         print("Added new route -> {0}, $ = {1}".format(new_row.getDestId(), new_row.getLinkCost()))
@@ -233,15 +251,15 @@ class RipDemon(threading.Thread):
                     entryExists = True
 
             if not entryExists:
-
-                new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
-                new_row.setHasBeenChanged()
-                new_row.updateLearntFrom(sending_router_id)
-                new_row.updateNextHopId(sending_router_id)
-                new_row.updateNextHopPort(port_to_send)
-                self.routing_table.addToRoutingTable(new_row)
-                print("Adding new neighbour ", new_row.getDestId())
-                print(self.routing_table.getPrettyTable())
+                if not cost_to_router_row_received_from + new_row.getLinkCost() > 15:
+                    new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
+                    new_row.setHasBeenChanged()
+                    new_row.updateLearntFrom(sending_router_id)
+                    new_row.updateNextHopId(sending_router_id)
+                    new_row.updateNextHopPort(port_to_send)
+                    self.routing_table.addToRoutingTable(new_row)
+                    print("Adding new neighbour ", new_row.getDestId())
+                    print(self.routing_table.getPrettyTable())
 
 
 
@@ -262,7 +280,7 @@ class RipDemon(threading.Thread):
                 # Remove entries that haven't changed
                 for Row in tableToSend.getRoutingTable():
                     if not Row.hasChanged():
-                        tableToSend.removeFromRoutingTable(Row.getDestId())
+                        tableToSend.removeToSwap(Row.getDestId())
                     #remove entries learnt from this neighbour
                     if int(outbound_router_id) == int(Row.getLearntFromRouter()):
                         tableToSend.removeFromRoutingTable(Row.getDestId())
@@ -293,7 +311,7 @@ class RipDemon(threading.Thread):
 
                 for row in tableToSend.getRoutingTable():
                     if int(outbound_router_id) == int(row.getLearntFromRouter()):
-                        tableToSend.removeFromRoutingTable(row.getDestId())
+                        tableToSend.removeToSwap(row.getDestId())
 
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
