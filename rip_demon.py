@@ -154,7 +154,7 @@ class RipDemon(threading.Thread):
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
         for Row in self.routing_table.getRoutingTable():
-            print(Row.getDestId(), " ", route.getDestId())
+
             if int(Row.getDestId()) == int(route.getDestId()):
                 Row.updateLinkCost(16)
                 Row.setHasBeenChanged()
@@ -277,7 +277,6 @@ class RipDemon(threading.Thread):
             outbound_router_id = entry[2]
             entry = entry[0]
             portToSend = int(entry)
-            print("Calling periodic update to ", outbound_router_id)
 
             # Dont send to self
             if portToSend != 0:

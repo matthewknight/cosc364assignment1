@@ -27,8 +27,7 @@ class RoutingTable(object):
 
     def populateTable(self):
         """Populate the routing table with the information learned from the Configuration files"""
-        self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0)
-        #self.addToRoutingTable(self_entry)
+
         output_list = self.output_ports.split(', ')
 
         for i in output_list:
@@ -39,7 +38,6 @@ class RoutingTable(object):
             learnedFrom = 0  # As it was learned from ConfigFile
             row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom)
             self.addToRoutingTable(row)
-
 
     def populateNeighbours(self):
         output_list = self.output_ports.split(', ')
@@ -55,7 +53,7 @@ class RoutingTable(object):
     def getPrettyTable(self):
         for foundRow in self.table:
             if foundRow is not None:
-                print("-> {0.destId}, $ = {0.linkCost}, Next hop: {0.nextHopId}, Learned from: {0.learnedFrom}".format(foundRow))
+                print("-> {0.destId}, $ = {0.linkCost}, Next hop ID: {0.nextHopId}, Learned from: {0.learnedFrom}".format(foundRow))
 
     def getRoutingTable(self):
         return self.table
