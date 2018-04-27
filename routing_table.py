@@ -12,8 +12,6 @@ class RoutingTable(object):
         self.populateTable()
         self.neighbours = []
         self.populateNeighbours()
-        print(self.table)
-
 
     def addOneFromConfig(self):
         output_list = self.output_ports.split(', ')
@@ -79,7 +77,6 @@ class RoutingTable(object):
             raise TypeError("Non routing-row provided as arg")
 
         self.table.append(new_row)
-        #self.neighbourTimers.append(rip_route.Route(new_row))
 
     def removeToSwap(self, destId):
         index = 0
@@ -90,14 +87,8 @@ class RoutingTable(object):
 
     def removeFromRoutingTable(self, destId):
         for Row in self.table:
-            print("ID to delete: {}, destId: {} nextHop: {} learntFrom: {}".format(destId, Row.getDestId(), Row.getNextHopId(), Row.getLearntFromRouter()))
-            print(Row.getDestId() == int(destId))
-            print(Row.getNextHopId() == int(destId))
-            print(Row.getLearntFromRouter() == int(destId))
-
             if int(Row.getDestId()) == int(destId) or int(Row.getNextHopId()) == int(destId) or \
                     (Row.getLearntFromRouter()) == int(destId):
-                print("deleting row ", Row)
                 self.table.remove(Row)
 
 

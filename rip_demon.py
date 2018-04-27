@@ -3,18 +3,13 @@ import json
 import select
 import threading
 import time
-import queue
 import copy
 import random
 import pickle
 from socket import *
 import routing_table
 import rip_packet
-import routing_row
 
-
-#TODO when a link goes down, delete entry (garbage collection??)
-#TODO SPLIT HORIZON WITH POISON REVERSE
 
 class RipDemon(threading.Thread):
 
@@ -72,7 +67,6 @@ class RipDemon(threading.Thread):
 
                 # Reset timeout timer of destId of received packed
                 receivedFromDestId = unpickledRIPReceivedPacket.getRouterId()
-                print("Packet recv from: ", receivedFromDestId)
                 for Route in self.routing_table.getRoutesWithTimers():
                     if Route.getDestId() == receivedFromDestId:
                         Route.resetTime()
@@ -80,14 +74,11 @@ class RipDemon(threading.Thread):
                 identical_entry_found = False
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
-
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
-
                             identical_entry_found = True
 
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
-
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
 
             self.timer_tick()
@@ -129,15 +120,12 @@ class RipDemon(threading.Thread):
             if Route.hasTimedOut():
                 Route.incrementGarbageCollectionTime()
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
-                    print("Route to ", Route.getDestId(), " has BEEN DELETED!!/////////////////////////////////////")
                     self.routing_table.removeFromRoutingTable(Route.getDestId())
                     self.routing_table.removeFromRoutingTable(Route.getDestId())
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
-                   # if Route.getRow().getLearntFromRouter() != 0:
                     self.set_row_as_timed_out(Route)
-                    print("Route to", Route.getDestId(), "has TIMEOUT!!///////////////////////////////////////////")
 
     def check_for_changed_routes(self):
         for Row in self.routing_table.getRoutingTable():
@@ -168,12 +156,7 @@ class RipDemon(threading.Thread):
         for Row in self.routing_table.getRoutingTable():
             print(Row.getDestId(), " ", route.getDestId())
             if int(Row.getDestId()) == int(route.getDestId()):
-                print("found the bastaard")
-                #if Row.getLearntFromRouter() != 0:
                 Row.updateLinkCost(16)
-                #todo do we have to remove it here? think its ruining things
-                #self.routing_table.removeFromRoutingTable(Row.getDestId())
-                #self.triggered_update()
                 Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
@@ -182,33 +165,13 @@ class RipDemon(threading.Thread):
                 Route.resetTime()
 
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
-        #check we have entry for this router id, if not, add from config file
-        # entryExistsFlag = False
-        # for neighbour in self.routing_table.getNeighbours():
-        #     if int(neighbour) == sending_router_id:
-        #         for route in self.routing_table.getRoutingTable():
-        #             if route.getDestId() == sending_router_id:
-        #                 entryExistsFlag = True
-        #                 break
-        #
-        # if not entryExistsFlag:
-        #     output_list = self.output_ports.split(", ")
-        #     for entry in output_list:
-        #         entry = entry.split('-')
-        #         outbound_router_id = entry[2]
-        #         metric = entry[1]
-        #         nextHopPort = entry[0]
-        #         if outbound_router_id == sending_router_id:
-        #             row_to_add = routing_row.RoutingRow(nextHopPort, outbound_router_id, metric, outbound_router_id, 0)
-        #             self.routing_table.addToRoutingTable(row_to_add)
-
-        #If theres no entry for the senders id
+        # If there's no entry for the senders id
         flag = False
         for row in self.routing_table.getRoutingTable():
             if int(row.getDestId()) == int(sending_router_id):
                 flag = True
                 break
-        if flag == False:
+        if not flag:
             self.routing_table.addOneFromConfig()
 
         # If next hop port is one of your own, skip this entry
@@ -221,8 +184,7 @@ class RipDemon(threading.Thread):
         destination_router = new_row.getDestId()
         new_distance = new_row.getLinkCost()
 
-
-        #If router receives a update to a link with metric 16 (i.e that link is down)
+        # If router receives a update to a link with metric 16 (i.e that link is down)
         if new_distance == 16:
             for row in self.routing_table.getRoutingTable():
                 if row.getDestId() == destination_router:
@@ -230,25 +192,17 @@ class RipDemon(threading.Thread):
                     row.setHasBeenChanged()
                     break
 
-
         for old_row in self.routing_table.getRoutingTable():
             # Make the route non modifiable when it hits 16
             if old_row.getLinkCost() == 16:
                 return
 
-
             cost_to_router_row_received_from = 16
             costFoundFlag = False
             for current_row in self.routing_table.getRoutingTable():
-
-
-
                 if int(current_row.getDestId()) == int(sending_router_id):
                     cost_to_router_row_received_from = current_row.getLinkCost()
                     costFoundFlag = True
-
-
-
 
             if destination_router == old_row.getDestId() and costFoundFlag:
                 # Process to see if new route is quicker than old, then add
@@ -261,14 +215,11 @@ class RipDemon(threading.Thread):
                     new_row.updateNextHopPort(port_to_send)
                     new_row.setHasBeenChanged()
 
-                    #TODO added this to stop deleting its neighbour routes
                     self.reset_timers_of_dest(new_row.getDestId())
-
 
                     if new_row not in self.routing_table.getRoutingTable():
                         self.routing_table.removeToSwap(destination_router)
                         self.routing_table.addToRoutingTable(new_row)
-                        row_added = True
                         print("Added new route -> {0}, $ = {1}".format(new_row.getDestId(), new_row.getLinkCost()))
                         print("Removed old entry from the routing table")
                         print(self.routing_table.getPrettyTable())
@@ -300,17 +251,15 @@ class RipDemon(threading.Thread):
             entry = entry[0]
             portToSend = int(entry)
 
-            # Dont send to self
+            # Don't send to self
             if portToSend != 0:
                 tableToSend = copy.deepcopy(self.routing_table)
                 # Remove entries that haven't changed
                 for Row in tableToSend.getRoutingTable():
                     if not Row.hasChanged():
                         tableToSend.removeToSwap(Row.getDestId())
-                    #remove entries learnt from this neighbour
                     if int(outbound_router_id) == int(Row.getLearntFromRouter()):
                         Row.updateLinkCost(16)
-                        #tableToSend.removeFromRoutingTable(Row.getDestId())
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
@@ -328,19 +277,15 @@ class RipDemon(threading.Thread):
             outbound_router_id = entry[2]
             entry = entry[0]
             portToSend = int(entry)
-            print("Calling periodic update to " , outbound_router_id)
-            # TODO split POISON REVERSE
+            print("Calling periodic update to ", outbound_router_id)
 
             # Dont send to self
             if portToSend != 0:
                 tableToSend = copy.deepcopy(self.routing_table)
-                #populate table to send, removing any links learned from this neighbour (split horizon)
 
                 for row in tableToSend.getRoutingTable():
                     if int(outbound_router_id) == int(row.getLearntFromRouter()):
                         row.updateLinkCost(16)
-                        #tableToSend.removeToSwap(row.getDestId())
-
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
@@ -378,10 +323,6 @@ class RipDemon(threading.Thread):
             print("Output ports not specified in config file. Exiting...")
             exit(0)
 
-    def test_printr(self):
-        print("Routing id: " + self.routing_id)
-        print(self.input_ports)
-        print("Output ports: " + self.output_ports)
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
