@@ -67,6 +67,7 @@ class RipDemon(threading.Thread):
     def run(self):
         while True:
 
+
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
