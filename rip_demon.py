@@ -130,8 +130,9 @@ class RipDemon(threading.Thread):
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
+                   # if Route.getRow().getLearntFromRouter() != 0:
                     self.set_row_as_timed_out(Route)
-                    print("Route to ", Route.getRow().getDestId(), " has TIMEOUT!!")
+                    print("Route to", Route.getRow().getDestId(), "has TIMEOUT!!")
 
     def check_for_changed_routes(self):
         for Row in self.routing_table.getRoutingTable():
@@ -139,16 +140,18 @@ class RipDemon(threading.Thread):
                 self.ready_for_triggered_update = True
                 return
 
+
+
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
         for Row in self.routing_table.getRoutingTable():
             if Row == route.getRow():
-                Row.updateLinkCost(16)
-
+                if Row.getLearntFromRouter() != 0:
+                    Row.updateLinkCost(16)
                 #todo do we have to remove it here? think its ruining things
-                self.routing_table.removeFromRoutingTable(Row.getDestId())
+                #self.routing_table.removeFromRoutingTable(Row.getDestId())
                 #self.triggered_update()
-                Row.setHasBeenChanged()
+                    Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
         for Route in self.routing_table.getRoutesWithTimers():
@@ -165,18 +168,33 @@ class RipDemon(threading.Thread):
 
         destination_router = new_row.getDestId()
         new_distance = new_row.getLinkCost()
+        infinity_metric = False
+
+        #If router receives a update to a link with metric 16 (i.e that link is down)
+        if new_distance == 16:
+            infinity_metric = True
 
         for old_row in self.routing_table.getRoutingTable():
+            #TODO remove this
             outputs = self.output_ports.split(',')
 
-            #cost_to_router_row_received_from = 16
+            cost_to_router_row_received_from = 16
+            costFoundFlag = False
             for current_row in self.routing_table.getRoutingTable():
+
+                #todo if row recv has 16 metric, update own entry
+                #if (infinity_metric):
+                #    current_row.updateLinkCost(16)
+                #    break
+
                 if int(current_row.getDestId()) == int(sending_router_id):
                     cost_to_router_row_received_from = current_row.getLinkCost()
+                    costFoundFlag = True
 
 
 
-            if destination_router == old_row.getDestId():
+
+            if destination_router == old_row.getDestId() and costFoundFlag:
                 # Process to see if new route is quicker than old, then add
                 prelim_dist = int(cost_to_router_row_received_from) + new_distance
 
@@ -186,6 +204,11 @@ class RipDemon(threading.Thread):
                     new_row.updateLearntFrom(sending_router_id)
                     new_row.updateNextHopPort(port_to_send)
                     new_row.setHasBeenChanged()
+
+                    #TODO added this to stop deleting its neighbour routes
+                    self.reset_timers_of_dest(new_row.getDestId())
+
+
                     if new_row not in self.routing_table.getRoutingTable():
                         self.routing_table.removeFromRoutingTable(destination_router)
                         self.routing_table.addToRoutingTable(new_row)
