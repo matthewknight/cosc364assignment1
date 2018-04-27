@@ -53,7 +53,6 @@ class RipDemon(threading.Thread):
         self.ready_for_periodic_update = False
         self.ready_for_triggered_update = False
 
-
     def socket_creator(self):
         """Initialise the sockets and create a list of socket objects
            based on the number of ports specified in config file"""
@@ -89,8 +88,6 @@ class RipDemon(threading.Thread):
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
 
             self.timer_tick()
-
-
 
     def timer_tick(self):
         # Timer component
@@ -131,6 +128,7 @@ class RipDemon(threading.Thread):
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
                     print("Route to ", Route.getDestId(), " has BEEN DELETED!!/////////////////////////////////////")
                     self.routing_table.removeFromRoutingTable(Route.getDestId())
+                    self.routing_table.removeFromRoutingTable(Route.getDestId())
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
@@ -161,7 +159,6 @@ class RipDemon(threading.Thread):
         for Row in non_neighbour_rows:
             if Row.getLinkCost() == 16:
                 self.routing_table.removeFromRoutingTable(Row.getDestId())
-
 
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
@@ -261,8 +258,6 @@ class RipDemon(threading.Thread):
                     print("Adding new neighbour ", new_row.getDestId())
                     print(self.routing_table.getPrettyTable())
 
-
-
     def triggered_update(self):
         print("Calling triggered update...", self.triggered_update_cooldown_timer_value)
         print(self.routing_table.getPrettyTable())
@@ -294,14 +289,14 @@ class RipDemon(threading.Thread):
             ourRow.resetChanged()
 
     def periodic_update(self):
-        print("Calling periodic update...")
+
         output_list = self.output_ports.split(", ")
         for entry in output_list:
             entry = entry.split('-')
             outbound_router_id = entry[2]
             entry = entry[0]
             portToSend = int(entry)
-
+            print("Calling periodic update to " , outbound_router_id)
             # TODO split POISON REVERSE
 
             # Dont send to self
@@ -317,7 +312,7 @@ class RipDemon(threading.Thread):
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
                 self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
-        #print(self.routing_table.getRoutesWithTimers())
+                print("sent")
         print("My Routing Table")
         print(self.routing_table.getPrettyTable())
 
@@ -354,7 +349,6 @@ class RipDemon(threading.Thread):
         print("Routing id: " + self.routing_id)
         print(self.input_ports)
         print("Output ports: " + self.output_ports)
-
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
