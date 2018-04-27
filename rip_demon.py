@@ -38,6 +38,7 @@ class RipDemon(threading.Thread):
         self.input_sockets_list = []
         self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
+        self.neighbours = routing_table.getNeighbours()
         self.alive = False
 
         print(self.routing_table.getPrettyTable())
@@ -146,12 +147,12 @@ class RipDemon(threading.Thread):
         route.setRouteAsTimedOut()
         for Row in self.routing_table.getRoutingTable():
             if Row == route.getRow():
-                if Row.getLearntFromRouter() != 0:
-                    Row.updateLinkCost(16)
+                #if Row.getLearntFromRouter() != 0:
+                Row.updateLinkCost(16)
                 #todo do we have to remove it here? think its ruining things
                 #self.routing_table.removeFromRoutingTable(Row.getDestId())
                 #self.triggered_update()
-                    Row.setHasBeenChanged()
+                Row.setHasBeenChanged()
 
     def reset_timers_of_dest(self, destId):
         for Route in self.routing_table.getRoutesWithTimers():

@@ -10,6 +10,8 @@ class RoutingTable(object):
         self.table = []
         self.routesWithTimers = []
         self.populateTable()
+        self.neighbours = []
+        self.populateNeighbours()
         print(self.table)
 
     def populateTable(self):
@@ -26,6 +28,17 @@ class RoutingTable(object):
             learnedFrom = 0  # As it was learned from ConfigFile
             row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom)
             self.addToRoutingTable(row)
+
+
+    def populateNeighbours(self):
+        output_list = self.output_ports.split(', ')
+        for i in output_list:
+            values = i.split('-')
+            destId = values[2]
+            self.neighbours.append(destId)
+
+    def getNeighbours(self):
+        return self.neighbours
 
     def getPrettyTable(self):
         for foundRow in self.table:
