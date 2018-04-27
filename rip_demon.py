@@ -252,6 +252,7 @@ class RipDemon(threading.Thread):
         output_list = self.output_ports.split(", ")
         for entry in output_list:
             entry = entry.split('-')
+            outbound_router_id = entry[2]
             entry = entry[0]
             portToSend = int(entry)
 
@@ -262,8 +263,9 @@ class RipDemon(threading.Thread):
                 for Row in tableToSend.getRoutingTable():
                     if not Row.hasChanged():
                         tableToSend.removeFromRoutingTable(Row.getDestId())
-
-
+                    #remove entries learnt from this neighbour
+                    if int(outbound_router_id) == int(Row.getLearntFromRouter()):
+                        tableToSend.removeFromRoutingTable(Row.getDestId())
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
@@ -288,11 +290,12 @@ class RipDemon(threading.Thread):
             if portToSend != 0:
                 tableToSend = copy.deepcopy(self.routing_table)
                 #populate table to send, removing any links learned from this neighbour (split horizon)
-                for entry in tableToSend.getRoutingTable():
 
-                    if int(outbound_router_id) == int(entry.getLearntFromRouter()):
+                for row in tableToSend.getRoutingTable():
+                    if int(outbound_router_id) == int(row.getLearntFromRouter()):
+                        tableToSend.removeFromRoutingTable(row.getDestId())
 
-                        tableToSend.removeFromRoutingTable(entry.getDestId())
+
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
                 self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
