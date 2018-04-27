@@ -72,6 +72,7 @@ class RipDemon(threading.Thread):
 
                 # Reset timeout timer of destId of received packed
                 receivedFromDestId = unpickledRIPReceivedPacket.getRouterId()
+                print("Packet recv from: ", receivedFromDestId)
                 for Route in self.routing_table.getRoutesWithTimers():
                     if Route.getDestId() == receivedFromDestId:
                         Route.resetTime()
@@ -82,9 +83,11 @@ class RipDemon(threading.Thread):
 
                     for current_row in self.routing_table.getRoutingTable():
                         if current_row.row_as_list() == found_row.row_as_list():
+
                             identical_entry_found = True
 
                     if unpickledRIPReceivedPacket.getRouterId() != self.routing_id and identical_entry_found == False:
+
                         self.process_route_entry(found_row, unpickledRIPReceivedPacket.getRouterId(), port_to_send)
 
             self.timer_tick()
@@ -179,6 +182,35 @@ class RipDemon(threading.Thread):
                 Route.resetTime()
 
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
+        #check we have entry for this router id, if not, add from config file
+        # entryExistsFlag = False
+        # for neighbour in self.routing_table.getNeighbours():
+        #     if int(neighbour) == sending_router_id:
+        #         for route in self.routing_table.getRoutingTable():
+        #             if route.getDestId() == sending_router_id:
+        #                 entryExistsFlag = True
+        #                 break
+        #
+        # if not entryExistsFlag:
+        #     output_list = self.output_ports.split(", ")
+        #     for entry in output_list:
+        #         entry = entry.split('-')
+        #         outbound_router_id = entry[2]
+        #         metric = entry[1]
+        #         nextHopPort = entry[0]
+        #         if outbound_router_id == sending_router_id:
+        #             row_to_add = routing_row.RoutingRow(nextHopPort, outbound_router_id, metric, outbound_router_id, 0)
+        #             self.routing_table.addToRoutingTable(row_to_add)
+
+        #If theres no entry for the senders id
+        flag = False
+        for row in self.routing_table.getRoutingTable():
+            if int(row.getDestId()) == int(sending_router_id):
+                flag = True
+                break
+        if flag == False:
+            self.routing_table.addOneFromConfig()
+
         # If next hop port is one of your own, skip this entry
         if new_row.getNextHopPort() in self.routing_table.getInputPorts():
             return
@@ -203,8 +235,7 @@ class RipDemon(threading.Thread):
             # Make the route non modifiable when it hits 16
             if old_row.getLinkCost() == 16:
                 return
-            #TODO remove this
-            outputs = self.output_ports.split(',')
+
 
             cost_to_router_row_received_from = 16
             costFoundFlag = False
@@ -278,7 +309,8 @@ class RipDemon(threading.Thread):
                         tableToSend.removeToSwap(Row.getDestId())
                     #remove entries learnt from this neighbour
                     if int(outbound_router_id) == int(Row.getLearntFromRouter()):
-                        tableToSend.removeFromRoutingTable(Row.getDestId())
+                        Row.updateLinkCost(16)
+                        #tableToSend.removeFromRoutingTable(Row.getDestId())
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
@@ -306,13 +338,14 @@ class RipDemon(threading.Thread):
 
                 for row in tableToSend.getRoutingTable():
                     if int(outbound_router_id) == int(row.getLearntFromRouter()):
-                        tableToSend.removeToSwap(row.getDestId())
+                        row.updateLinkCost(16)
+                        #tableToSend.removeToSwap(row.getDestId())
 
 
                 packetToSend = rip_packet.RIPPacket(1, self.routing_id, tableToSend)
                 pickledPacketToSend = pickle.dumps(packetToSend)
                 self.input_sockets_list[0].sendto(pickledPacketToSend, ("127.0.0.1", portToSend))
-                print("sent")
+
         print("My Routing Table")
         print(self.routing_table.getPrettyTable())
 

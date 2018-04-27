@@ -14,6 +14,19 @@ class RoutingTable(object):
         self.populateNeighbours()
         print(self.table)
 
+
+    def addOneFromConfig(self):
+        output_list = self.output_ports.split(', ')
+        for i in output_list:
+            values = i.split('-')
+            nextHopPort = values[0]
+            linkCost = values[1]
+            destId = values[2]
+            learnedFrom = 0  # As it was learned from ConfigFile
+            row = routing_row.RoutingRow(nextHopPort, destId, linkCost, destId, learnedFrom)
+            if row not in self.table:
+                self.addToRoutingTable(row)
+
     def populateTable(self):
         """Populate the routing table with the information learned from the Configuration files"""
         self_entry = routing_row.RoutingRow(0, 0, 0, self.routing_id, 0)
