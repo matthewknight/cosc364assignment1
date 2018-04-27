@@ -1,8 +1,7 @@
 class Route(object):
 
-    def __init__(self, row):
-        ##TODO change row to just destId -> TMI
-        self.row = row
+    def __init__(self, destId):
+        self.destId = destId
         self.timeoutTime = 0
         self.hasTimeout = False
         self.garbageCollectionTime = 0
@@ -32,6 +31,6 @@ class Route(object):
         self.timeoutTime = 0
         self.garbageCollectionTime = 0
 
-    def getRow(self):
-        return self.row
+    def getDestId(self):
+        return self.destId
 

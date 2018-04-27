@@ -38,7 +38,6 @@ class RipDemon(threading.Thread):
         self.input_sockets_list = []
         self.socket_creator()
         self.routing_table = routing_table.RoutingTable(data)
-        self.neighbours = routing_table.getNeighbours()
         self.alive = False
 
         print(self.routing_table.getPrettyTable())
@@ -66,12 +65,18 @@ class RipDemon(threading.Thread):
 
     def run(self):
         while True:
-
-
             readable, writable, exceptional = select.select(self.input_sockets_list, [], [], 0.1)
             for s in readable:
                 packet, addr = s.recvfrom(2048)
+
                 unpickledRIPReceivedPacket = pickle.loads(packet)
+
+                # Reset timeout timer of destId of received packed
+                receivedFromDestId = unpickledRIPReceivedPacket.getRouterId()
+                for Route in self.routing_table.getRoutesWithTimers():
+                    if Route.getDestId() == receivedFromDestId:
+                        Route.resetTime()
+
                 identical_entry_found = False
                 port_to_send = addr[1]
                 for found_row in unpickledRIPReceivedPacket.getRIPEntries().getRoutingTable():
@@ -124,17 +129,14 @@ class RipDemon(threading.Thread):
             if Route.hasTimedOut():
                 Route.incrementGarbageCollectionTime()
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
-                    print("Route to ", Route.getRow().getDestId(), " has BEEN DELETED!!")
+                    print("Route to ", Route.getDestId(), " has BEEN DELETED!!")
                     #self.routing_table.removeFromRoutingTable(Route.getRow().getDestId())
-
-
-
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
                    # if Route.getRow().getLearntFromRouter() != 0:
                     self.set_row_as_timed_out(Route)
-                    print("Route to", Route.getRow().getDestId(), "has TIMEOUT!!")
+                    print("Route to", Route.getDestId(), "has TIMEOUT!!")
 
     def check_for_changed_routes(self):
         for Row in self.routing_table.getRoutingTable():
@@ -142,12 +144,12 @@ class RipDemon(threading.Thread):
                 self.ready_for_triggered_update = True
                 return
 
-
-
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
         for Row in self.routing_table.getRoutingTable():
-            if Row == route.getRow():
+            print(Row.getDestId(), " ", route.getDestId())
+            if int(Row.getDestId()) == int(route.getDestId()):
+                print("found the bastaard")
                 #if Row.getLearntFromRouter() != 0:
                 Row.updateLinkCost(16)
                 #todo do we have to remove it here? think its ruining things
@@ -157,7 +159,7 @@ class RipDemon(threading.Thread):
 
     def reset_timers_of_dest(self, destId):
         for Route in self.routing_table.getRoutesWithTimers():
-            if int(Route.row.getDestId()) == int(destId):
+            if int(Route.getDestId()) == int(destId):
                 Route.resetTime()
 
     def process_route_entry(self, new_row, sending_router_id, port_to_send):
@@ -222,9 +224,8 @@ class RipDemon(threading.Thread):
             entryExists = False
             for current_row in self.routing_table.getRoutingTable():
                 if current_row.getDestId() == new_row.getDestId():
-                    self.reset_timers_of_dest(new_row.getDestId())
-
                     entryExists = True
+
             if not entryExists:
 
                 new_row.updateLinkCost(cost_to_router_row_received_from + new_row.getLinkCost())
@@ -330,7 +331,7 @@ class RipDemon(threading.Thread):
 
 if __name__ == "__main__":
     config_file_name = sys.argv[1]
-    router = RipDemon(config_file_name, 3, True, 15, 15)
+    router = RipDemon(config_file_name, 3, True, 7, 15)
     router.run()
 
 

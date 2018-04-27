@@ -8,7 +8,7 @@ class RoutingTable(object):
         self.input_ports = data["input-ports"]
         self.output_ports = data["outputs"]
         self.table = []
-        self.routesWithTimers = []
+        self.neighbourTimers = []
         self.populateTable()
         self.neighbours = []
         self.populateNeighbours()
@@ -36,6 +36,7 @@ class RoutingTable(object):
             values = i.split('-')
             destId = values[2]
             self.neighbours.append(destId)
+            self.neighbourTimers.append(rip_route.Route(destId))
 
     def getNeighbours(self):
         return self.neighbours
@@ -49,7 +50,7 @@ class RoutingTable(object):
         return self.table
 
     def getRoutesWithTimers(self):
-        return self.routesWithTimers
+        return self.neighbourTimers
 
     def getRouterId(self):
         return self.routing_id
@@ -65,7 +66,7 @@ class RoutingTable(object):
             raise TypeError("Non routing-row provided as arg")
 
         self.table.append(new_row)
-        self.routesWithTimers.append(rip_route.Route(new_row))
+        #self.neighbourTimers.append(rip_route.Route(new_row))
 
 
     def removeFromRoutingTable(self, destId):
@@ -73,10 +74,10 @@ class RoutingTable(object):
         for row in self.table:
             if row.row_as_list()[2] == int(destId):
                 del self.table[index]
-            for Route in self.routesWithTimers:
-                if Route.getRow().getDestId() == destId:
-                    print("deleting route timer -> ", destId)
-                    self.routesWithTimers.remove(Route)
+            # for Route in self.neighbourTimers:
+            #     if Route.getRow().getDestId() == destId:
+            #         print("deleting route timer -> ", destId)
+            #         self.neighbourTimers.remove(Route)
             index += 1
 
 
