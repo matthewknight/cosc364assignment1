@@ -143,6 +143,8 @@ class RipDemon(threading.Thread):
             if Row.hasChanged():
                 self.ready_for_triggered_update = True
                 return
+            if Row.getLinkCost() == 16:
+                self.routing_table.removeFromRoutingTable(Row.getDestId())
 
     def set_row_as_timed_out(self, route):
         route.setRouteAsTimedOut()
@@ -202,6 +204,9 @@ class RipDemon(threading.Thread):
             if destination_router == old_row.getDestId() and costFoundFlag:
                 # Process to see if new route is quicker than old, then add
                 prelim_dist = int(cost_to_router_row_received_from) + new_distance
+                if prelim_dist >= 16:
+                    print('2big skipping')
+                    return
 
                 if prelim_dist < old_row.getLinkCost():
                     new_row.updateLinkCost(prelim_dist)
