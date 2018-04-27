@@ -130,7 +130,7 @@ class RipDemon(threading.Thread):
                 Route.incrementGarbageCollectionTime()
                 if Route.getGarbageCollectionTime() == self.garbage_collection_period:
                     print("Route to ", Route.getDestId(), " has BEEN DELETED!!")
-                    #self.routing_table.removeFromRoutingTable(Route.getRow().getDestId())
+                    self.routing_table.removeFromRoutingTable(Route.getDestId())
             else:
                 Route.incrementTimeoutTime()
                 if Route.getTimeoutTime() == self.timeout_period:
@@ -172,11 +172,15 @@ class RipDemon(threading.Thread):
 
         destination_router = new_row.getDestId()
         new_distance = new_row.getLinkCost()
-        infinity_metric = False
+
 
         #If router receives a update to a link with metric 16 (i.e that link is down)
         if new_distance == 16:
-            infinity_metric = True
+            for row in self.routing_table.getRoutingTable():
+                if row.getDestId() == destination_router:
+                    row.updateLinkCost(16)
+                    break
+
 
         for old_row in self.routing_table.getRoutingTable():
             #TODO remove this
@@ -186,10 +190,7 @@ class RipDemon(threading.Thread):
             costFoundFlag = False
             for current_row in self.routing_table.getRoutingTable():
 
-                #todo if row recv has 16 metric, update own entry
-                #if (infinity_metric):
-                #    current_row.updateLinkCost(16)
-                #    break
+
 
                 if int(current_row.getDestId()) == int(sending_router_id):
                     cost_to_router_row_received_from = current_row.getLinkCost()
